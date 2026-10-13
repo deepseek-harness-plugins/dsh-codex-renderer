@@ -88,6 +88,14 @@ try{
   await page.getByRole('button',{name:'展开图表',exact:true}).click();await page.getByRole('button',{name:'放大图表',exact:true}).click();assert.equal(await page.locator('.dcr-zoom').innerText(),'125%');await page.keyboard.press('Escape');await page.locator('.dcr-dialog').waitFor({state:'detached'});check('Mermaid 渲染、源码、复制、下载和缩放');
   await page.waitForFunction(()=>document.querySelector('.dcr-audio audio')?.duration>0&&document.querySelector('.dcr-video video')?.duration>0);
   assert.match(await page.locator('audio').getAttribute('src'),/^blob:/);assert.match(await page.locator('video').getAttribute('src'),/^blob:/);
+  const audioBox=await page.locator('.dcr-audio').boundingBox(),videoBox=await page.locator('.dcr-video').boundingBox();
+  assert.equal(audioBox.width,512);assert.equal(audioBox.height,98);
+  assert.equal(videoBox.width,640,'640px 视频保持文件宽度');assert.equal(videoBox.height,401,'360px 画面加 40px 控件和 1px 分隔线');
+  await page.getByRole('button',{name:'音频选项',exact:true}).click();
+  assert.equal((await page.locator('.dcr-menu').boundingBox()).width,160);
+  await page.getByRole('menuitem',{name:'复制路径',exact:true}).click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),join(assets,'sample.wav'));
+  await page.locator('.dcr-menu').waitFor({state:'detached'});
+  check('音频附件尺寸与路径菜单、视频原始宽度符合截图对照');
   await page.setViewportSize({width:1200,height:2000});await page.mouse.move(0,0);await page.locator('.dcr-audio').screenshot({path:join(assets,'audio.png')});await page.locator('.dcr-video').screenshot({path:join(assets,'video.png')});await page.setViewportSize({width:1200,height:900});
   await page.getByRole('button',{name:'播放音频',exact:true}).click();await page.getByRole('button',{name:'暂停音频',exact:true}).waitFor();
   await page.waitForFunction(()=>document.querySelector('audio').currentTime>.15);
@@ -100,7 +108,10 @@ try{
   await page.getByRole('slider',{name:'视频进度',exact:true}).fill('5');await page.waitForFunction(()=>document.querySelector('video').currentTime>=5&&document.querySelector('video').currentTime<6,null,{timeout:1500});
   await page.getByRole('button',{name:'暂停视频',exact:true}).click();check('本地音频、视频通过自定义播放与进度控件定位成功');
   await page.getByRole('button',{name:'视频选项',exact:true}).click();await page.getByRole('menuitemradio',{name:'1.5×',exact:true}).click();assert.equal(await page.locator('video').evaluate(el=>el.playbackRate),1.5);await page.locator('.dcr-menu').waitFor({state:'detached'});
-  await page.getByRole('button',{name:'视频音量',exact:true}).click();await page.getByRole('slider',{name:'视频音量大小',exact:true}).fill('0.3');assert.equal(await page.locator('video').evaluate(el=>el.volume),.3);await page.getByRole('button',{name:'静音视频',exact:true}).click();assert.equal(await page.locator('video').evaluate(el=>el.muted),true);await page.keyboard.press('Escape');await page.locator('.dcr-menu-closing').waitFor();await page.locator('.dcr-menu').waitFor({state:'detached'});check('音视频选项菜单淡出关闭并归还焦点');
+  await page.getByRole('button',{name:'视频音量',exact:true}).click();
+  const volumeBox=await page.getByRole('dialog',{name:'视频音量',exact:true}).boundingBox();assert.equal(volumeBox.width,168);assert.equal(volumeBox.height,36);
+  await page.keyboard.press('Tab');assert.equal(await page.getByRole('slider',{name:'视频音量大小',exact:true}).evaluate(el=>el===document.activeElement),true,'Tab 可从静音按钮进入音量滑块，保持面板打开');
+  await page.getByRole('slider',{name:'视频音量大小',exact:true}).fill('0.3');assert.equal(await page.locator('video').evaluate(el=>el.volume),.3);await page.getByRole('button',{name:'静音视频',exact:true}).click();assert.equal(await page.locator('video').evaluate(el=>el.muted),true);await page.keyboard.press('Escape');await page.locator('.dcr-menu-closing').waitFor();await page.locator('.dcr-menu').waitFor({state:'detached'});check('音视频选项菜单淡出关闭并归还焦点');
   await page.getByRole('button',{name:'全屏播放',exact:true}).click();await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('dcr-video'));
   await page.getByRole('button',{name:'视频选项',exact:true}).click();assert.equal(await page.locator('.dcr-video .dcr-menu').count(),1,'全屏时选项在全屏元素内显示');await page.keyboard.press('Escape');await page.locator('.dcr-menu').waitFor({state:'detached'});await page.getByRole('button',{name:'退出全屏',exact:true}).click();await page.waitForFunction(()=>!document.fullscreenElement);check('自定义视频倍速、音量、静音与全屏菜单');
   const settings=async()=>{await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('button',{name:'通用设置',exact:true}).click();};

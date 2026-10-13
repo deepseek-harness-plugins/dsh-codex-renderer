@@ -50,7 +50,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.2.1.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.2.2.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
@@ -98,7 +98,11 @@ npm run demo:media
 
 ## 音视频控件对齐
 
-音频的附件行和视频操作条按 Codex 的尺寸分别实现。表格与图表保持原有布局，设置仍使用 DSH 原生组件。尺寸依据见 [音视频控件对齐记录](docs/codex-media-parity.md)。
+音频的附件行和视频操作条按 Codex 原组件的截图与尺寸实现，对比覆盖 20 个状态，包括播放、悬停、拖动、菜单、音量、全屏、窄宽度与深色模式。表格与图表保持原有布局，设置仍使用 DSH 原生组件。
+
+![音频控件对照](assets/audio-comparison.png)
+
+参考截图由本机 Codex 生产组件离线渲染，DSH 截图来自真实 Web 宿主。尺寸、截图来源和仍存在的差异见 [逐状态对照记录](docs/codex-media-parity.md)。
 
 ## 开发与验证
 
