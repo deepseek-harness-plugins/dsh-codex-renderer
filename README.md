@@ -1,6 +1,6 @@
 # DSH Codex Renderer
 
-为 DeepSeek Harness 增加 Codex 风格的表格、Mermaid 图表与音视频播放器。
+为 DeepSeek Harness 增加表格、Mermaid 图表与音视频播放器，结合 Codex 的操作方式和 DSH 原生组件样式。
 
 ## 功能
 
@@ -50,14 +50,14 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.0.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.1.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认 `@deepseekharness-plugin/dsh-codex-renderer` 已启用。
 
 ## 设置
 
-在「设置 → 通用设置 → 回复渲染增强」中，分别开启或关闭表格控件、Mermaid 图表和音视频播放器。
+在「设置 → 通用设置」中，分别开启或关闭「表格控件」「Mermaid 图表」和「音视频播放器」。这三项使用 DSH 原生开关与默认设置行布局。
 
 ![设置](assets/settings.png)
 

@@ -35,17 +35,27 @@ const annotations=resolve(project,'../dsh-codex-annotations'),withAnnotations=ex
 if(withAnnotations)await symlink(annotations,join(profile,'node_modules/@deepseekharness-plugin/dsh-codex-annotations'));
 await writeFile(join(profile,'package.json'),JSON.stringify({name:'renderer-fixture',private:true,dependencies:{'@deepseekharness-plugin/dsh-codex-renderer':`link:${project}`,...withAnnotations?{'@deepseekharness-plugin/dsh-codex-annotations':`link:${annotations}`}:{ }},dsh:{profile:{bundles:['@deepseek-ai/dsh-base','@deepseek-ai/dsh-web-app']}}}));
 await writeFile(join(profile,'cordis.yml'),'[]');await writeFile(join(profile,'cordis.patch.yml'),JSON.stringify([{id:'ui-settings-general',config:{welcomeNoticeVersion:'2026-09-28.1'}},{id:'session-title-llm',disabled:true},{id:'llm-pi-ai',config:{providers:{'renderer-fixture':{displayName:'渲染测试',api:'anthropic-messages',baseURL:mockURL,apiKeyEnv:'DCR_FIXTURE_KEY',models:[{id:'render-demo',name:'渲染测试'}]}}}}]));
-let browser,page,log='';const errors=[],checks=[];
+let browser,page,log='';const errors=[],checks=[],clientLogs=[];
 const child=spawn('/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh',['--profile','web','--host','127.0.0.1','--port','0','--no-open'],{cwd:workspace,env:{...process.env,DSH_HOME:home,DSH_TELEMETRY_DISABLED:'1',DCR_FIXTURE_KEY:'synthetic-local-fixture'}});
 child.stdout.on('data',x=>{log+=x});child.stderr.on('data',x=>{log+=x});
 const check=name=>{checks.push(name);console.log('PASS',name);};
 try{
   let url;for(let i=0;i<160;i++){url=log.match(/dsh web: (http:\/\/\S+)/)?.[1];if(url)break;if(child.exitCode!==null)throw Error(log);await new Promise(r=>setTimeout(r,250));}if(!url)throw Error('DSH 启动超时');
   browser=await chromium.launch({channel:'chrome',headless:true});
-  const context=await browser.newContext({viewport:{width:1200,height:900},deviceScaleFactor:2,locale:'zh-CN',permissions:['clipboard-read','clipboard-write']});page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(18000);
+  const context=await browser.newContext({viewport:{width:1200,height:900},deviceScaleFactor:2,locale:'zh-CN',permissions:['clipboard-read','clipboard-write']});page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>{if(['error','warning'].includes(message.type()))clientLogs.push(message.text());});page.setDefaultTimeout(18000);
   await page.goto(url,{waitUntil:'domcontentloaded'});await page.locator('[contenteditable=true]').waitFor();
   if(await page.getByRole('button',{name:'继续',exact:true}).count())await page.getByRole('button',{name:'继续',exact:true}).click();
-  const toggle=async name=>{await page.getByRole('button',{name:'插件',exact:true}).click();const control=page.getByRole('switch',{name:`启用 @deepseekharness-plugin/${name}`,exact:true});const enabled=!await control.isChecked();await control.click();if(name==='dsh-codex-renderer')await page.waitForFunction(enabled=>!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]')===enabled,enabled);};
+  const toggle=async(name,desired)=>{
+    await page.getByRole('button',{name:'插件',exact:true}).click();
+    const pkg=`@deepseekharness-plugin/${name}`,control=page.getByRole('switch',{name:`启用 ${pkg}`,exact:true});
+    // DSH persists plugin changes asynchronously. Wait for its busy switch,
+    // rather than treating style removal as completion of that write.
+    await page.waitForFunction(pkg=>{const button=document.querySelector(`[data-plugin-package="${pkg}"] [role="switch"]`);return button&&!button.disabled;},pkg);
+    const enabled=desired??!await control.isChecked();
+    if(await control.isChecked()!==enabled)await control.click();
+    await page.waitForFunction(({pkg,enabled})=>{const card=document.querySelector(`[data-plugin-package="${pkg}"]`),button=card?.querySelector('[role="switch"]');return button&&!button.disabled&&button.getAttribute('aria-checked')===String(enabled)&&card.dataset.pluginStatus===(enabled?'running':'disabled');},{pkg,enabled});
+    if(name==='dsh-codex-renderer')await page.waitForFunction(enabled=>!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]')===enabled,enabled);
+  };
   await toggle('dsh-codex-renderer');
   await page.getByText('新会话',{exact:true}).first().click();
   await page.getByRole('button',{name:/^选择模型/}).click();await page.getByText('模型',{exact:true}).click();await page.getByRole('menuitemradio',{name:'渲染测试',exact:true}).click();
@@ -69,7 +79,22 @@ try{
   await page.getByRole('button',{name:'播放音频',exact:true}).click();await page.getByRole('button',{name:'暂停音频',exact:true}).waitFor();await page.getByRole('slider',{name:'音频进度',exact:true}).fill('1');assert.equal(await page.locator('audio').evaluate(el=>el.currentTime),1);await page.getByRole('button',{name:'暂停音频',exact:true}).click();
   await page.locator('video').evaluate(async el=>{await el.play();});assert.equal(await page.locator('video').evaluate(el=>el.paused),false);await page.locator('video').evaluate(el=>el.pause());check('音频播放暂停与定位、视频解码播放');
   const settings=async()=>{await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('button',{name:'通用设置',exact:true}).click();};
-  await settings();await page.locator('.dcr-settings').screenshot({path:join(assets,'settings.png')});
+  await settings();
+  const nativeSwitch=page.getByRole('switch',{name:'显示代码工作视图',exact:true}),rendererSwitch=page.getByRole('switch',{name:'表格控件',exact:true});
+  assert.equal(await rendererSwitch.getAttribute('class'),await nativeSwitch.getAttribute('class'),'使用与 DSH 设置相同的原生 Switch');
+  const rowGeometry=el=>{const style=getComputedStyle(el.parentElement);return{padding:style.padding,gap:style.gap,border:style.borderBottomWidth};};
+  assert.deepEqual(await rendererSwitch.evaluate(rowGeometry),await nativeSwitch.evaluate(rowGeometry),'设置行匹配 DSH 原生间距和分隔线');
+  assert.equal(await page.locator('.dcr-settings h3,.dcr-switch').count(),0);
+  check('设置使用原生开关与默认行布局');
+  const lightFill=await diagram.locator('text').first().evaluate(el=>getComputedStyle(el).fill);
+  await page.getByRole('button',{name:'深色',exact:true}).click();
+  await page.waitForFunction(light=>{const text=document.querySelector('.dcr-diagram text');return text&&getComputedStyle(text).fill!==light;},lightFill);
+  await page.getByRole('button',{name:'浅色',exact:true}).click();
+  await page.waitForFunction(light=>{const text=document.querySelector('.dcr-diagram text');return text&&getComputedStyle(text).fill===light;},lightFill);
+  check('图表颜色跟随 DSH 外观切换');
+  const settingsRows=page.locator('.dcr-settings');await settingsRows.last().scrollIntoViewIfNeeded();
+  const boxes=await settingsRows.evaluateAll(rows=>rows.map(row=>{const r=row.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}));
+  await page.screenshot({path:join(assets,'settings.png'),clip:{x:boxes[0].x,y:boxes[0].y,width:boxes[0].width,height:boxes.at(-1).y+boxes.at(-1).height-boxes[0].y}});
   for(const label of ['表格控件','Mermaid 图表','音视频播放器'])await page.getByRole('switch',{name:label,exact:true}).click();await page.getByRole('button',{name:'关闭',exact:true}).click();
   assert.equal(await page.locator('.dcr-table-tools,.dcr-mermaid,.dcr-media').count(),0);assert.equal(await page.locator('.dcr-native-hidden').count(),0);assert.match(await page.locator('.md-code-block').innerText(),/flowchart LR/);check('关闭三项开关后恢复 DSH 原始渲染');
   await settings();for(const label of ['表格控件','Mermaid 图表','音视频播放器'])await page.getByRole('switch',{name:label,exact:true}).click();await page.getByRole('button',{name:'关闭',exact:true}).click();await page.locator('.dcr-diagram svg').waitFor();
@@ -77,9 +102,9 @@ try{
   await toggle('dsh-codex-annotations');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);check('停用批注插件后渲染继续正常');}
   await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();assert.equal(await page.locator('[data-dcr-ui],.dcr-native-hidden,.dcr-table-owner').count(),0);assert.equal(await page.locator('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]').count(),0);check('停用插件完整清理 DOM 与自有样式');
   await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);
-  for(let cycle=0;cycle<3;cycle++){await toggle('dsh-codex-renderer');await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-source').count(),1);assert.equal(await page.locator('.dcr-table-tools').count(),1);}check('连续三次启停无重复控件或遗漏');
+  for(let cycle=0;cycle<3;cycle++){await toggle('dsh-codex-renderer',false);await toggle('dsh-codex-renderer',true);await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-source').count(),1);assert.equal(await page.locator('.dcr-table-tools').count(),1);}check('连续三次启停无重复控件或遗漏');
   await send('错误语法样例');await page.getByText('图表无法渲染，请检查 Mermaid 语法。',{exact:true}).waitFor();assert.equal(await page.locator('.dcr-mermaid').count(),2);check('无效 Mermaid 显示源码与错误状态');
   assert.deepEqual(errors,[]);check('真实 DSH 宿主无页面异常');
   await writeFile(join(artifacts,'verification.json'),JSON.stringify({checks,errors},null,2));console.log('RENDERER_HOST_OK',checks.length);
-}catch(e){if(page){await page.screenshot({path:join(artifacts,'failure.png')});console.log((await page.locator('body').innerText()).slice(-4000));console.log(await page.evaluate(()=>({style:!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]'),sources:document.querySelectorAll('.dcr-source').length,settings:localStorage.getItem('dsh-codex-renderer.ui.v1')})));}console.log(log.slice(-2200));console.log(errors);throw e;}
+}catch(e){if(page){await page.screenshot({path:join(artifacts,'failure.png')});console.log((await page.locator('body').innerText()).slice(-4000));console.log(await page.evaluate(()=>({style:!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]'),sources:document.querySelectorAll('.dcr-source').length,settings:localStorage.getItem('dsh-codex-renderer.ui.v1')})));}console.log(log.slice(-2200));console.log(errors);console.log(clientLogs.slice(-8));throw e;}
 finally{await browser?.close();child.kill();mock.close();}

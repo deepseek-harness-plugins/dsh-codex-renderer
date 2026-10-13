@@ -3,7 +3,7 @@ import {mkdir,writeFile,readFile,readdir} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 await mkdir('lib',{recursive:true});
 await build({entryPoints:['src/index.js'],bundle:true,outfile:'lib/index.js',format:'esm',platform:'node',target:'node22'});
-const result=await build({entryPoints:['src/client.jsx'],bundle:true,write:false,outfile:'lib/client.js',format:'cjs',platform:'browser',target:'chrome130',external:['react','react-dom'],jsx:'transform',minify:true,legalComments:'linked',loader:{'.css':'text'},metafile:true});
+const result=await build({entryPoints:['src/client.jsx'],bundle:true,write:false,outfile:'lib/client.js',format:'cjs',platform:'browser',target:'chrome130',external:['react','react-dom','@deepseek-ai/dsh-client-ui-primitives'],jsx:'transform',minify:true,legalComments:'linked',loader:{'.css':'text'},metafile:true});
 const js=result.outputFiles.find(f=>f.path.endsWith('.js')||f.path==='<stdout>').text;
 await writeFile('lib/client.js',`window.__ModuleLoader__.load({id:"@deepseekharness-plugin/dsh-codex-renderer",factory:(require)=>{const module={exports:{}};const exports=module.exports;\n${js}\nreturn module.exports;}});\n`);
 for(const file of result.outputFiles.filter(f=>f.path.endsWith('.LEGAL.txt')))await writeFile('lib/client.js.LEGAL.txt',file.text);

@@ -1,14 +1,24 @@
 import React,{useState,useRef,useLayoutEffect,useSyncExternalStore} from 'react';
 import {createPortal} from 'react-dom';
+import {Switch} from '@deepseek-ai/dsh-client-ui-primitives';
 import {contentWidgets,mediaURL,createPreferences,PREFERENCE_KEY} from './core.js';
 import {TableTools,MermaidCard,MediaCard} from './components.jsx';
 import css from './styles.css';
 
 export const inject = ['slots'];
 
-function Settings({preferences}) {
+const SETTINGS=[
+  ['tables','表格控件','复制表格与展开预览'],
+  ['mermaid','Mermaid 图表','将 Mermaid 代码块显示为图表'],
+  ['media','音视频播放器','在回复中播放音频和视频'],
+];
+
+function SettingsRow({preferences,setting:[key,label,description]}) {
   const values=useSyncExternalStore(preferences.subscribe,preferences.getSnapshot),[error,setError]=useState('');
-  return <section className="dcr-settings" aria-label="回复渲染增强"><h3>回复渲染增强</h3>{[['tables','表格控件'],['mermaid','Mermaid 图表'],['media','音视频播放器']].map(([key,label])=><div className="dcr-setting-row" key={key}><span>{label}</span><button type="button" className="dcr-switch" role="switch" aria-label={label} aria-checked={values[key]} onClick={()=>{try{preferences.update({[key]:!values[key]});setError('');}catch(e){setError('设置未保存：'+e.message);}}}><span/></button></div>)}{error&&<p className="dcr-settings-error" role="alert">{error}</p>}</section>;
+  return <div className="dcr-settings dcr-setting-row">
+    <div><div className="dcr-setting-title">{label}</div><div className="dcr-setting-description">{description}</div>{error&&<div role="alert">{error}</div>}</div>
+    <Switch label={label} checked={values[key]} onChange={next=>{try{preferences.update({[key]:next});setError('');}catch(e){setError('设置未保存：'+e.message);}}}/>
+  </div>;
 }
 
 function EnhancedReply({inner:Inner,preferences,...props}) {
@@ -75,7 +85,10 @@ export function apply(ctx) {
   const preferences=createPreferences(localStorage);
   const reload=event=>{if(event.key===PREFERENCE_KEY||event.key===null)preferences.reload();};
   window.addEventListener('storage',reload);ctx.effect(()=>()=>window.removeEventListener('storage',reload));
-  ctx.slots.inject('settings.general.item',()=>ctx.slots.register({name:'settings.general.item',id:'codex-renderer',order:21},()=> <Settings preferences={preferences}/>));
+  ctx.slots.inject('settings.general.item',()=>{
+    const releases=SETTINGS.map((setting,index)=>ctx.slots.register({name:'settings.general.item',id:`codex-renderer-${setting[0]}`,order:21+index/10},()=> <SettingsRow preferences={preferences} setting={setting}/>));
+    return()=>{for(const release of releases.reverse())release();};
+  });
   const name='conversation.chat.node',decorated=new WeakSet(),registrations=new Map();
   const decorate=()=>{
     const entries=ctx.slots.entries(name);
