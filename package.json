@@ -1,19 +1,24 @@
 {
   "name": "@deepseekharness-plugin/dsh-codex-renderer",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "icon": "./icon.svg",
   "description": "DeepSeek Harness 的 Codex 风格表格、Mermaid 和音视频渲染组件",
   "type": "module",
   "license": "MIT",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./client": "./lib/client.js"
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "lib",
     "cordis.patch.yml",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "icon.svg",
+    "locale/*.json"
   ],
   "engines": {
     "node": ">=22.19.0",

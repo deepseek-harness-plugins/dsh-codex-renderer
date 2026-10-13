@@ -50,10 +50,10 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.2.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.3.tgz"
 ```
 
-然后在 DSH 的「插件」页面确认 `@deepseekharness-plugin/dsh-codex-renderer` 已启用。
+然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
 
 ## 设置
 

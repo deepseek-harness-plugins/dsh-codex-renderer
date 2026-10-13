@@ -47,7 +47,7 @@ try{
   if(await page.getByRole('button',{name:'继续',exact:true}).count())await page.getByRole('button',{name:'继续',exact:true}).click();
   const toggle=async(name,desired)=>{
     await page.getByRole('button',{name:'插件',exact:true}).click();
-    const pkg=`@deepseekharness-plugin/${name}`,control=page.getByRole('switch',{name:`启用 ${pkg}`,exact:true});
+    const pkg=`@deepseekharness-plugin/${name}`,control=page.locator(`[data-plugin-package="${pkg}"]`).getByRole('switch');
     // DSH persists plugin changes asynchronously. Wait for its busy switch,
     // rather than treating style removal as completion of that write.
     await page.waitForFunction(pkg=>{const button=document.querySelector(`[data-plugin-package="${pkg}"] [role="switch"]`);return button&&!button.disabled;},pkg);
