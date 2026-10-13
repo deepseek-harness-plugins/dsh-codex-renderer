@@ -102,14 +102,28 @@ export function MermaidCard({code}) {
 
 const time=value=>`${Math.floor(value/60)}:${String(Math.floor(value%60)).padStart(2,'0')}`;
 export function MediaCard({item}) {
-  const player=useRef(),[playing,setPlaying]=useState(false),[position,setPosition]=useState(0),[duration,setDuration]=useState(0),[error,setError]=useState('');
+  const player=useRef(),[src,setSrc]=useState(null),[playing,setPlaying]=useState(false),[position,setPosition]=useState(0),[duration,setDuration]=useState(0),[error,setError]=useState('');
   const name=item.label||decodeURIComponent(item.url.split(/[?#]/)[0].split('/').pop())||'媒体文件';
-  useEffect(()=>{const element=player.current;return()=>{element.pause();element.removeAttribute('src');element.load();};},[]);
+  useEffect(()=>{
+    const controller=new AbortController(),element=player.current;let objectURL;
+    setError('');setDuration(0);setPosition(0);setPlaying(false);
+    // DSH's local file endpoint serves whole files without byte ranges.
+    // A local Blob gives the browser a seekable source without changing DSH.
+    const local=item.src.startsWith(new URL('api/file?',document.baseURI).href);
+    setSrc(local?null:item.src);
+    if(local)(async()=>{try{
+      const response=await fetch(item.src,{signal:controller.signal});if(!response.ok)throw Error();
+      const blob=await response.blob();if(controller.signal.aborted)return;
+      objectURL=URL.createObjectURL(blob);setSrc(objectURL);
+    }catch{if(!controller.signal.aborted)setError('无法播放此文件，可通过原始文件链接打开。');}})();
+    return()=>{controller.abort();element.pause();element.removeAttribute('src');element.load();if(objectURL)URL.revokeObjectURL(objectURL);};
+  },[item.src]);
   const download=async()=>{try{const response=await fetch(item.src);if(!response.ok)throw Error();saveBlob(await response.blob(),decodeURIComponent(item.url.split(/[?#]/)[0].split('/').pop())||`${item.kind}.bin`);}catch{setError('下载失败，可通过原始文件链接打开。');}};
-  const common={src:item.src,preload:'metadata',onError:()=>setError('无法播放此文件，可通过原始文件链接打开。'),onLoadedMetadata:e=>{const value=e.currentTarget.duration;setDuration(Number.isFinite(value)?value:0);},onTimeUpdate:e=>setPosition(e.currentTarget.currentTime),onPlay:()=>setPlaying(true),onPause:()=>setPlaying(false),onEnded:()=>setPlaying(false)};
+  const common={src:src??undefined,preload:'metadata',onError:()=>setError('无法播放此文件，可通过原始文件链接打开。'),onLoadedMetadata:e=>{const value=e.currentTarget.duration;setDuration(Number.isFinite(value)?value:0);},onTimeUpdate:e=>setPosition(e.currentTarget.currentTime),onPlay:()=>setPlaying(true),onPause:()=>setPlaying(false),onEnded:()=>setPlaying(false)};
   return <section className={`dcr-media dcr-${item.kind}`} aria-label={`${item.kind==='audio'?'音频':'视频'}播放器`}>
     <header><div className="dcr-media-name"><span>{name}</span><small>{item.kind==='audio'?'音频':'视频'}</small></div><div className="dcr-actions"><Action label="打开原始文件" icon="external" onClick={()=>window.open(item.src,'_blank','noopener,noreferrer')}/><Action label="下载媒体" icon="download" onClick={download}/></div></header>
-    {item.kind==='video'?<video ref={player} controls playsInline {...common}/>:<><audio ref={player} {...common}/><div className="dcr-audio-controls"><Action label={playing?'暂停音频':'播放音频'} icon={playing?'pause':'play'} onClick={async()=>{try{if(playing)player.current.pause();else await player.current.play();}catch{setError('无法播放此文件，可通过原始文件链接打开。');}}}/><input type="range" min="0" max={duration||1} step=".01" value={Math.min(position,duration||1)} disabled={!duration} style={{'--dcr-progress':`${duration?position/duration*100:0}%`}} aria-label="音频进度" aria-valuetext={`${time(position)} / ${time(duration)}`} onChange={e=>{const value=Number(e.target.value);player.current.currentTime=value;setPosition(value);}}/><span className="dcr-time">{time(position)} / {time(duration)}</span></div></>}
+    {item.kind==='video'?<video ref={player} controls playsInline {...common}/>:<><audio ref={player} {...common}/><div className="dcr-audio-controls"><Action label={playing?'暂停音频':'播放音频'} icon={playing?'pause':'play'} disabled={!src} onClick={async()=>{try{if(playing)player.current.pause();else await player.current.play();}catch{setError('无法播放此文件，可通过原始文件链接打开。');}}}/><input type="range" min="0" max={duration||1} step=".01" value={Math.min(position,duration||1)} disabled={!duration} style={{'--dcr-progress':`${duration?position/duration*100:0}%`}} aria-label="音频进度" aria-valuetext={`${time(position)} / ${time(duration)}`} onChange={e=>{const value=Number(e.target.value);player.current.currentTime=value;setPosition(value);}}/><span className="dcr-time">{time(position)} / {time(duration)}</span></div></>}
+    {!src&&!error&&<p className="dcr-status" role="status">正在加载{item.kind==='audio'?'音频':'视频'}…</p>}
     {error&&<p className="dcr-status" role="status">{error}</p>}
   </section>;
 }

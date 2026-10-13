@@ -11,7 +11,7 @@ const project=resolve(new URL('..',import.meta.url).pathname),artifacts=join(pro
 await mkdir(artifacts,{recursive:true});await mkdir(assets,{recursive:true});
 const media={'/sample.wav':{type:'audio/wav',bytes:await readFile(join(assets,'sample.wav'))},'/sample.mp4':{type:'video/mp4',bytes:await readFile(join(assets,'sample.mp4'))}};
 let requests=0,mockURL;
-const responseText=()=>`### 表格\n\n| 功能 | 当前状态 | 操作 |\n| --- | --- | --- |\n| 表格 | 已支持 | 复制、展开 |\n| Mermaid | 已支持 | 放大、下载 |\n| 音视频 | 已支持 | 播放、进度控制 |\n\n### 流程图\n\n\`\`\`mermaid\nflowchart LR\n A[Markdown 回复] --> B{内容类型}\n B --> C[表格控件]\n B --> D[Mermaid 图表]\n B --> E[音视频播放器]\n\`\`\`\n\n### 音频\n\n![音频样例](${mockURL}/sample.wav)\n\n### 视频\n\n![视频样例](${mockURL}/sample.mp4)`;
+const responseText=()=>`### 表格\n\n| 功能 | 当前状态 | 操作 |\n| --- | --- | --- |\n| 表格 | 已支持 | [复制、展开](https://example.com/table) |\n| Mermaid | 已支持 | 放大、下载 |\n| 音视频 | 已支持 | 播放、进度控制 |\n\n### 流程图\n\n\`\`\`mermaid\nflowchart LR\n A[Markdown 回复] --> B{内容类型}\n B --> C[表格控件]\n B --> D[Mermaid 图表]\n B --> E[音视频播放器]\n\`\`\`\n\n### 音频\n\n![音频样例](${join(assets,'sample.wav')})\n\n### 视频\n\n![视频样例](${join(assets,'sample.mp4')})`;
 const mock=createServer(async(req,res)=>{
   const file=media[req.url];
   if(file){
@@ -23,7 +23,7 @@ const mock=createServer(async(req,res)=>{
   const send=(type,data)=>res.write(`event: ${type}\ndata: ${JSON.stringify({type,...data})}\n\n`);
   send('message_start',{message:{id:'render_'+requests,type:'message',role:'assistant',content:[],model:request.model,stop_reason:null,stop_sequence:null,usage:{input_tokens:1,output_tokens:0}}});
   send('content_block_start',{index:0,content_block:{type:'text',text:''}});
-  const text=requests===1?responseText():'```mermaid\nflowchart LR\n A[broken -->\n```\n\n错误语法样例结束。';
+  const text=requests===1?responseText():requests===2?'```mermaid\nflowchart LR\n A[broken -->\n```\n\n错误语法样例结束。':`![网络音频](${mockURL}/sample.wav)\n\n![网络视频](${mockURL}/sample.mp4)`;
   for(let i=0;i<text.length;i+=80){send('content_block_delta',{index:0,delta:{type:'text_delta',text:text.slice(i,i+80)}});await new Promise(r=>setTimeout(r,12));}
   send('content_block_stop',{index:0});send('message_delta',{delta:{stop_reason:'end_turn',stop_sequence:null},usage:{output_tokens:100}});send('message_stop',{});res.end();
 });
@@ -64,10 +64,22 @@ try{
   await page.locator('.dcr-diagram svg').waitFor();await page.locator('.dcr-audio').waitFor();await page.locator('.dcr-video').waitFor();
   assert.equal(await page.locator('.dcr-table-tools').count(),1);assert.equal(await page.locator('.dcr-mermaid').count(),1);assert.equal(await page.locator('.dcr-media').count(),2);check('流式输出后每个控件只挂载一次');
   const table=page.locator('.dcr-table-owner');await table.hover();await table.screenshot({path:join(assets,'table.png')});
+  const headerPlacement=await table.evaluate(owner=>{
+    const header=owner.querySelector('thead').getBoundingClientRect(),tools=owner.querySelector('.dcr-table-tools').getBoundingClientRect();
+    return{headerCenter:header.y+header.height/2,toolsCenter:tools.y+tools.height/2,paddingTop:getComputedStyle(owner).paddingTop};
+  });
+  assert.ok(Math.abs(headerPlacement.headerCenter-headerPlacement.toolsCenter)<1,'操作按钮与表头同行');
+  assert.equal(headerPlacement.paddingTop,'0px','不为操作栏增加顶部留白');check('表格操作按钮位于表头右侧且没有额外留白');
   await page.getByRole('button',{name:'复制表格',exact:true}).click();await page.getByRole('button',{name:'已复制',exact:true}).waitFor();
   const clip=await page.evaluate(async()=>({text:await navigator.clipboard.readText(),types:(await navigator.clipboard.read()).flatMap(x=>x.types)}));
   assert.match(clip.text,/功能\t当前状态\t操作/);assert.ok(clip.types.includes('text/html'));check('表格复制含 TSV 文本和 HTML 表格');
-  await page.getByRole('button',{name:'展开表格',exact:true}).click();await page.getByRole('dialog',{name:'表格预览',exact:true}).waitFor();await page.locator('.dcr-dialog').screenshot({path:join(assets,'table-expanded.png')});
+  const linkStyle=el=>{const style=getComputedStyle(el);return{color:style.color,fontFamily:style.fontFamily,fontSize:style.fontSize,textDecoration:style.textDecorationLine};};
+  const inlineLinkStyle=await table.getByText('复制、展开',{exact:true}).evaluate(linkStyle);
+  await page.getByRole('button',{name:'展开表格',exact:true}).click();await page.getByRole('dialog',{name:'表格预览',exact:true}).waitFor();
+  assert.deepEqual(await page.locator('.dcr-dialog').getByText('复制、展开',{exact:true}).evaluate(linkStyle),inlineLinkStyle,'预览保留 DSH 原生链接和字号');
+  assert.ok((await page.locator('.dcr-dialog').boundingBox()).width<800,'短表格预览按内容取宽');
+  await page.locator('.dcr-dialog').evaluate(el=>Promise.all(el.getAnimations({subtree:true}).map(animation=>animation.finished)));
+  await page.locator('.dcr-dialog').screenshot({path:join(assets,'table-expanded.png')});
   await page.keyboard.press('Escape');await page.locator('.dcr-closing').waitFor();await page.locator('.dcr-dialog').waitFor({state:'detached'});check('表格展开及关闭动画');
   const diagram=page.locator('.dcr-mermaid');await page.setViewportSize({width:1200,height:1400});await diagram.scrollIntoViewIfNeeded();await diagram.screenshot({path:join(assets,'mermaid.png')});await page.setViewportSize({width:1200,height:900});
   await page.getByRole('button',{name:'复制 Mermaid 源码',exact:true}).click();assert.match(await page.evaluate(()=>navigator.clipboard.readText()),/^flowchart LR/);
@@ -75,9 +87,17 @@ try{
   const saved=page.waitForEvent('download');await page.getByRole('button',{name:'下载 SVG',exact:true}).click();assert.equal((await saved).suggestedFilename(),'diagram.svg');
   await page.getByRole('button',{name:'展开图表',exact:true}).click();await page.getByRole('button',{name:'放大图表',exact:true}).click();assert.equal(await page.locator('.dcr-zoom').innerText(),'125%');await page.keyboard.press('Escape');await page.locator('.dcr-dialog').waitFor({state:'detached'});check('Mermaid 渲染、源码、复制、下载和缩放');
   await page.waitForFunction(()=>document.querySelector('.dcr-audio audio')?.duration>0&&document.querySelector('.dcr-video video')?.duration>0);
+  assert.match(await page.locator('audio').getAttribute('src'),/^blob:/);assert.match(await page.locator('video').getAttribute('src'),/^blob:/);
   await page.locator('.dcr-audio').screenshot({path:join(assets,'audio.png')});await page.locator('.dcr-video').screenshot({path:join(assets,'video.png')});
-  await page.getByRole('button',{name:'播放音频',exact:true}).click();await page.getByRole('button',{name:'暂停音频',exact:true}).waitFor();await page.getByRole('slider',{name:'音频进度',exact:true}).fill('1');assert.equal(await page.locator('audio').evaluate(el=>el.currentTime),1);await page.getByRole('button',{name:'暂停音频',exact:true}).click();
-  await page.locator('video').evaluate(async el=>{await el.play();});assert.equal(await page.locator('video').evaluate(el=>el.paused),false);await page.locator('video').evaluate(el=>el.pause());check('音频播放暂停与定位、视频解码播放');
+  await page.getByRole('button',{name:'播放音频',exact:true}).click();await page.getByRole('button',{name:'暂停音频',exact:true}).waitFor();
+  await page.waitForFunction(()=>document.querySelector('audio').currentTime>.15);
+  assert.equal(await page.locator('audio').evaluate(el=>el.seekable.end(0)),10,'本地音频完整可定位');
+  await page.getByRole('slider',{name:'音频进度',exact:true}).fill('5');
+  await page.waitForFunction(()=>document.querySelector('audio').currentTime>=5&&document.querySelector('audio').currentTime<6,null,{timeout:1500});
+  await page.getByRole('button',{name:'暂停音频',exact:true}).click();
+  await page.locator('video').evaluate(async el=>{await el.play();});await page.waitForFunction(()=>document.querySelector('video').currentTime>.15);
+  await page.locator('video').evaluate(el=>{el.currentTime=5;});await page.waitForFunction(()=>document.querySelector('video').currentTime>=5&&document.querySelector('video').currentTime<6,null,{timeout:1500});
+  await page.locator('video').evaluate(el=>el.pause());check('本地音频、视频播放和定位均生效');
   const settings=async()=>{await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('button',{name:'通用设置',exact:true}).click();};
   await settings();
   const nativeSwitch=page.getByRole('switch',{name:'显示代码工作视图',exact:true}),rendererSwitch=page.getByRole('switch',{name:'表格控件',exact:true});
@@ -125,6 +145,12 @@ try{
   await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);
   for(let cycle=0;cycle<3;cycle++){await toggle('dsh-codex-renderer',false);await toggle('dsh-codex-renderer',true);await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-source').count(),1);assert.equal(await page.locator('.dcr-table-tools').count(),1);}check('连续三次启停无重复控件或遗漏');
   await send('错误语法样例');await page.getByText('图表无法渲染，请检查 Mermaid 语法。',{exact:true}).waitFor();assert.equal(await page.locator('.dcr-mermaid').count(),2);check('无效 Mermaid 显示源码与错误状态');
+  await send('网络音视频样例');await page.getByText('网络音频',{exact:true}).waitFor();
+  await page.waitForFunction(()=>document.querySelectorAll('audio').length===2&&Array.from(document.querySelectorAll('audio,video')).every(el=>el.duration>0));
+  const remoteAudio=page.locator('.dcr-audio').last(),remoteVideo=page.locator('.dcr-video').last();
+  assert.equal(await remoteAudio.locator('audio').getAttribute('src'),mockURL+'/sample.wav');assert.equal(await remoteVideo.locator('video').getAttribute('src'),mockURL+'/sample.mp4');
+  await remoteAudio.getByRole('button',{name:'播放音频',exact:true}).click();await page.waitForFunction(()=>Array.from(document.querySelectorAll('audio')).at(-1).currentTime>.15);await remoteAudio.getByRole('button',{name:'暂停音频',exact:true}).click();
+  await remoteVideo.locator('video').evaluate(async el=>{await el.play();});await page.waitForFunction(()=>Array.from(document.querySelectorAll('video')).at(-1).currentTime>.15);await remoteVideo.locator('video').evaluate(el=>el.pause());check('HTTP 音视频保留原始地址并正常播放');
   assert.deepEqual(errors,[]);check('真实 DSH 宿主无页面异常');
   await writeFile(join(artifacts,'verification.json'),JSON.stringify({checks,errors},null,2));console.log('RENDERER_HOST_OK',checks.length);
 }catch(e){if(page){await page.screenshot({path:join(artifacts,'failure.png')});console.log((await page.locator('body').innerText()).slice(-4000));console.log(await page.evaluate(()=>({style:!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]'),sources:document.querySelectorAll('.dcr-source').length,settings:localStorage.getItem('dsh-codex-renderer.ui.v1')})));}console.log(log.slice(-2200));console.log(errors);console.log(clientLogs.slice(-8));throw e;}

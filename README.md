@@ -13,11 +13,11 @@
 
 ### 表格
 
-鼠标悬停在表格上时显示操作按钮。复制内容同时包含纯文本与 HTML 表格，便于粘贴到文档或电子表格中。
+鼠标悬停在表格上时，表头右侧显示复制与展开按钮。复制内容同时包含纯文本与 HTML 表格，便于粘贴到文档或电子表格中。
 
 ![表格工具栏](assets/table.png)
 
-展开后，可以在独立窗口中阅读表格。
+展开后，可以在按内容取宽的预览窗口中阅读表格，保留 DSH 原有的字号、链接与表格样式。
 
 ![表格预览](assets/table-expanded.png)
 
@@ -50,7 +50,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.3.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.4.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
@@ -83,6 +83,18 @@ flowchart LR
 ```
 
 支持绝对本地路径与 HTTP(S) 地址。音视频格式由 DSH 使用的浏览器内核解码。
+
+## 验证音视频
+
+项目提供一段 10 秒测试音频和一段带声音的测试视频。在项目目录中运行：
+
+```sh
+npm run demo:media
+```
+
+把输出的提示词复制给 DSH，让助手原样回复其中的 Markdown。播放器出现后，可检查播放、暂停，并把进度拖到第 5 秒；视频应显示持续变化的画面。
+
+播放器增强作用于助手回复。链接放在代码块中时会显示为代码，无法生成播放器。
 
 ## 开发与验证
 
