@@ -1,6 +1,6 @@
 {
   "name": "@deepseekharness-plugin/dsh-codex-renderer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DeepSeek Harness 的 Codex 风格表格、Mermaid 和音视频渲染组件",
   "type": "module",
   "license": "MIT",
@@ -36,7 +36,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:host": "node scripts/host-test.mjs",
-    "check": "npm run build && npm test && npm run test:host"
+    "test:boot": "node scripts/boot-test.mjs",
+    "check": "npm run build && npm test && npm run test:host && npm run test:boot"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

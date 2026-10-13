@@ -98,7 +98,28 @@ try{
   for(const label of ['表格控件','Mermaid 图表','音视频播放器'])await page.getByRole('switch',{name:label,exact:true}).click();await page.getByRole('button',{name:'关闭',exact:true}).click();
   assert.equal(await page.locator('.dcr-table-tools,.dcr-mermaid,.dcr-media').count(),0);assert.equal(await page.locator('.dcr-native-hidden').count(),0);assert.match(await page.locator('.md-code-block').innerText(),/flowchart LR/);check('关闭三项开关后恢复 DSH 原始渲染');
   await settings();for(const label of ['表格控件','Mermaid 图表','音视频播放器'])await page.getByRole('switch',{name:label,exact:true}).click();await page.getByRole('button',{name:'关闭',exact:true}).click();await page.locator('.dcr-diagram svg').waitFor();
-  if(withAnnotations){await toggle('dsh-codex-annotations');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);assert.equal(await page.locator('.dcr-media').count(),2);check('与批注插件同时启用不重复注册');
+  if(withAnnotations){await toggle('dsh-codex-annotations');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);assert.equal(await page.locator('.dcr-media').count(),2);
+  assert.equal(await page.locator('.dca-source').count(),1,'回复只挂载一层批注组件');
+  await page.locator('[data-dca-content]').evaluate(el=>{
+    const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
+    while((node=walker.nextNode()))if(node.textContent==='表格'){
+      const range=document.createRange();range.selectNodeContents(node);
+      const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+      node.parentElement.scrollIntoView({block:'center',behavior:'instant'});
+      el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));return;
+    }
+    throw Error('找不到批注测试选区');
+  });
+  await page.getByRole('button',{name:'添加到对话',exact:true}).click();
+  await page.getByRole('textbox',{name:'批注 1 的可选评论',exact:true}).fill('渲染与批注兼容测试');
+  await page.getByRole('button',{name:'保存',exact:true}).click();
+  await page.getByRole('button',{name:'1 条注释',exact:true}).waitFor();
+  assert.equal(await page.locator('[data-dca-marker]').count(),1);
+  await page.locator('.dca-dock .dca-batch-chip').hover();
+  await page.getByRole('button',{name:'删除全部待发送批注',exact:true}).click();
+  check('与批注同时启用：单层包装、选区菜单、保存批注及引用附件正常');
+  await page.reload();await page.locator('.dcr-diagram svg').waitFor();
+  assert.equal(await page.locator('.dca-source').count(),1);assert.equal(await page.locator('.dcr-source').count(),1);check('两个插件启用后刷新成功并保留单层包装');
   await toggle('dsh-codex-annotations');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);check('停用批注插件后渲染继续正常');}
   await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();assert.equal(await page.locator('[data-dcr-ui],.dcr-native-hidden,.dcr-table-owner').count(),0);assert.equal(await page.locator('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]').count(),0);check('停用插件完整清理 DOM 与自有样式');
   await toggle('dsh-codex-renderer');await page.getByText('展示三个增强组件',{exact:true}).first().click();await page.locator('.dcr-diagram svg').waitFor();assert.equal(await page.locator('.dcr-table-tools').count(),1);

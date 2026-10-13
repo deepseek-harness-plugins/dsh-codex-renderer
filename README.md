@@ -50,7 +50,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.1.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.2.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认 `@deepseekharness-plugin/dsh-codex-renderer` 已启用。
@@ -92,7 +92,7 @@ npm run check
 
 测试覆盖 Markdown 内容识别、表格剪贴板格式、预览开关、Mermaid 渲染及错误状态、媒体播放与定位，以及插件连续启停。宿主测试在隔离配置中启动本机 DSH，通过本地模拟模型返回样例。
 
-若相邻目录存在 `dsh-codex-annotations`，还会执行批注插件兼容测试。测试使用的音视频文件随仓库提供。
+若相邻目录存在已构建的 `dsh-codex-annotations`，还会验证两种插件加载顺序下的冷启动、选区批注、保存引用与刷新恢复。测试使用的音视频文件随仓库提供。
 
 图表使用 [Mermaid](https://mermaid.js.org/)，Markdown 内容识别使用 [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown)。依赖随插件打包，无需加载外部 CDN。第三方许可证随构建产物保存在 `lib/THIRD_PARTY_LICENSES.txt`。
 

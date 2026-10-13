@@ -89,20 +89,24 @@ export function apply(ctx) {
     const releases=SETTINGS.map((setting,index)=>ctx.slots.register({name:'settings.general.item',id:`codex-renderer-${setting[0]}`,order:21+index/10},()=> <SettingsRow preferences={preferences} setting={setting}/>));
     return()=>{for(const release of releases.reverse())release();};
   });
-  const name='conversation.chat.node',decorated=new WeakSet(),registrations=new Map();
+  const name='conversation.chat.node',registrations=new Map();
   const decorate=()=>{
     const entries=ctx.slots.entries(name);
     for(const [entry,release]of registrations)if(!entries.includes(entry)){registrations.delete(entry);release();}
-    // Wrap one active reply seat. Other decorators can then wrap this seat;
-    // wrapping every newly added decorator would create a registration cycle.
+    // Enhance the native reply once. Wrapping another decorator would put it
+    // both inside and outside this component when it observes our registration.
     if(registrations.size)return;
-    const candidates=entries.filter(entry=>entry.options.key==='assistant-step'&&!decorated.has(entry.component));
-    const entry=candidates.sort((a,b)=>(a.options.priority??0)-(b.options.priority??0))[0];
+    const replies=entries.filter(entry=>entry.options.key==='assistant-step');
+    // DSH registers its base assistant view at the default (zero) priority.
+    const entry=replies.find(entry=>(entry.options.priority??0)===0);
     if(entry){
       const Original=entry.component;
       function Renderer(props){return props.groupPart==='reasoning'?<Original {...props}/>:<EnhancedReply inner={Original} preferences={preferences} {...props}/>;}
-      decorated.add(Renderer);registrations.set(entry,()=>{});
-      const release=ctx.slots.register({name,...entry.options,priority:(entry.options.priority??0)-1,inject:entry.inject,locale:entry.locale,store:entry.store},Renderer);
+      registrations.set(entry,()=>{});
+      // Keyed priorities must be unique. Leave the next lower seat free for
+      // annotations, which decorates each source at source.priority - 1.
+      const priority=Math.min(...replies.map(reply=>reply.options.priority??0))-2;
+      const release=ctx.slots.register({name,...entry.options,priority,inject:entry.inject,locale:entry.locale,store:entry.store},Renderer);
       registrations.set(entry,release);
     }
   };
