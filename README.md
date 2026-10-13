@@ -1,6 +1,6 @@
 # DSH Codex Renderer
 
-为 DeepSeek Harness 增加表格、Mermaid 图表与音视频播放器，结合 Codex 的操作方式和 DSH 原生组件样式。
+为 DeepSeek Harness 增加表格、Mermaid 图表与音视频播放器，表格与图表沿用 DSH 原生样式，音视频按 Codex 桌面端的控件布局实现。
 
 ## 功能
 
@@ -9,7 +9,7 @@
 | 表格 | 悬停工具栏、复制表格、展开预览、保留横向滚动 |
 | Mermaid | 图表渲染、源码切换、源码复制、SVG 下载、预览缩放 |
 | 音频 | 播放与暂停、时间轴定位、进度显示、文件下载 |
-| 视频 | 内嵌播放、进度控制、浏览器全屏、文件下载 |
+| 视频 | 自定义播放条、定位、音量、倍速、全屏、画中画 |
 
 ### 表格
 
@@ -29,7 +29,7 @@
 
 ### 音视频
 
-自动识别回复中的音视频文件，显示内嵌播放器。
+自动识别回复中的音视频文件。音频使用文件卡片、格式说明和独立时间轴；视频使用自定义操作条，支持音量、倍速、全屏与画中画。
 
 ![音频播放器](assets/audio.png)
 
@@ -50,7 +50,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.1.4.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.2.1.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
@@ -95,6 +95,10 @@ npm run demo:media
 把输出的提示词复制给 DSH，让助手原样回复其中的 Markdown。播放器出现后，可检查播放、暂停，并把进度拖到第 5 秒；视频应显示持续变化的画面。
 
 播放器增强作用于助手回复。链接放在代码块中时会显示为代码，无法生成播放器。
+
+## 音视频控件对齐
+
+音频的附件行和视频操作条按 Codex 的尺寸分别实现。表格与图表保持原有布局，设置仍使用 DSH 原生组件。尺寸依据见 [音视频控件对齐记录](docs/codex-media-parity.md)。
 
 ## 开发与验证
 

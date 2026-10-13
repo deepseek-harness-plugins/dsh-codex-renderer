@@ -1,6 +1,6 @@
 {
   "name": "@deepseekharness-plugin/dsh-codex-renderer",
-  "version": "0.1.4",
+  "version": "0.2.1",
   "icon": "./icon.svg",
   "description": "DeepSeek Harness 的 Codex 风格表格、Mermaid 和音视频渲染组件",
   "type": "module",
@@ -19,6 +19,8 @@
     "LICENSE",
     "icon.svg",
     "locale/*.json",
+    "docs/codex-media-parity.md",
+    "assets/*.png",
     "assets/sample.wav",
     "assets/sample.mp4",
     "scripts/media-demo.mjs"

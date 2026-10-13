@@ -19,12 +19,10 @@
 .dcr-preview-table th { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-layer-2); }
 .dcr-preview-table button { cursor: pointer; }
 
-/* Graphs and media use the same quiet surface as DSH's code cards. */
-.dcr-mermaid,
-.dcr-media { border: 0; border-radius: var(--dsw-radius-lg, 12px); background: var(--dsw-alias-markdown-code-block); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); }
+/* Graphs use the same quiet surface as DSH's code cards. */
+.dcr-mermaid { border: 0; border-radius: var(--dsw-radius-lg, 12px); background: var(--dsw-alias-markdown-code-block); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); }
 .dcr-mermaid { margin: 8px 0; overflow: hidden; }
-.dcr-mermaid > header,
-.dcr-media > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dcr-mermaid > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dcr-mermaid > header { padding: 8px 12px 4px 18px; color: var(--dsw-alias-label-tertiary); font: 11px/18px var(--dsw-font-family); }
 .dcr-render-work { position: absolute; left: -100000px; top: 0; visibility: hidden; pointer-events: none; }
 .dcr-diagram { display: flex; align-items: center; justify-content: center; padding: 16px 20px 20px; overflow: auto; min-height: 100px; }
@@ -38,18 +36,6 @@
 .dcr-zoom { min-width: 40px; text-align: center; color: var(--dsw-alias-label-secondary); font: 11px/18px var(--dsw-font-family); }
 .dcr-status { margin: 0; padding: 8px 0; color: var(--dsw-alias-label-secondary); font: 12px/18px var(--dsw-font-family); }
 .dcr-mermaid .dcr-status { padding: 12px 20px; }
-.dcr-media { width: 100%; max-width: 512px; padding: 14px 16px; margin: 12px 0; }
-.dcr-media-name { min-width: 0; }
-.dcr-media-name > span { display: block; overflow-wrap: anywhere; font: 14px/20px var(--dsw-font-family); }
-.dcr-media-name > small { display: block; margin-top: 2px; color: var(--dsw-alias-label-tertiary); font: 11px/18px var(--dsw-font-family); }
-.dcr-audio-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-.dcr-time { color: var(--dsw-alias-label-secondary); font: 11px/18px var(--dsw-font-family); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dcr-audio-controls input { appearance: none; flex: 1; min-width: 30px; height: 4px; margin: 0; border: 0; border-radius: var(--dsw-radius-pill, 999px); background: linear-gradient(to right, var(--dsw-alias-state-business-primary) var(--dcr-progress), var(--dsw-alias-border-l2) var(--dcr-progress)); cursor: pointer; }
-.dcr-audio-controls input::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--dsw-alias-state-business-primary); }
-.dcr-audio-controls input:focus-visible { outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: 4px; }
-.dcr-audio-controls input:disabled { opacity: .4; cursor: default; }
-.dcr-media video { display: block; width: 100%; max-height: 420px; margin-top: 10px; border-radius: var(--dsw-radius-sm, 8px); background: #17181b; }
-
 /* Match General Settings' native DeveloperToolsRow geometry. */
 .dcr-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); }
 .dcr-setting-title { font-size: 14px; line-height: 20px; font-weight: 400; }
@@ -57,3 +43,69 @@
 @keyframes dcr-close { to { opacity: 0; } }
 @media (hover: none) { .dcr-table-tools { opacity: 1; pointer-events: auto; } }
 @media (prefers-reduced-motion: reduce) { .dcr-closing { animation: none !important; } .dcr-table-tools { transition: none; } }
+
+/* Widget controls have their own geometry; General Settings keeps DSH's primitives. */
+.dcr-media, .dcr-tooltip, .dcr-menu {
+  --dcr-surface: var(--dsw-alias-bg-layer-2);
+  --dcr-text: var(--dsw-alias-label-primary);
+  --dcr-secondary: var(--dsw-alias-label-secondary);
+  --dcr-tertiary: var(--dsw-alias-label-tertiary);
+  --dcr-border: var(--dsw-alias-border-l2);
+  --dcr-hover: color-mix(in srgb, var(--dcr-text) 6%, transparent);
+  font-family: var(--dsw-font-family);
+}
+.dcr-control { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; padding: 0; margin: 0; border: 0; background: transparent; color: var(--dcr-tertiary); cursor: pointer; user-select: none; -webkit-app-region: no-drag; }
+.dcr-control svg { display: block; flex: none; }
+.dcr-control:hover:not(:disabled), .dcr-control[aria-expanded=true], .dcr-control[aria-pressed=true] { background: var(--dcr-hover); color: var(--dcr-text); }
+.dcr-control:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
+.dcr-control:disabled { opacity: .4; cursor: default; }
+.dcr-control-toolbar, .dcr-control-audio { width: 28px; height: 28px; border-radius: 6px; color: var(--dcr-secondary); }
+.dcr-control-audio { background: var(--dcr-hover); border: 1px solid var(--dcr-border); }
+.dcr-control-audio svg { width: 16px; height: 16px; }
+.dcr-controls { display: flex; align-items: center; gap: 4px; flex: none; }
+.dcr-tooltip { position: fixed; z-index: 10002; width: max-content; max-width: min(320px, calc(100vw - 16px)); padding: 5px 12px; border: 1px solid #ffffff14; border-radius: 16px; background: #181a1b; color: #fff; font-size: 13px; font-weight: 400; line-height: 18px; letter-spacing: .01em; box-shadow: 0 8px 18px #0f172a33; transform: translate(-50%, -100%); pointer-events: none; animation: dcr-tooltip-enter 100ms ease-out both; }
+.dcr-tooltip-below { transform: translate(-50%, 0); }
+.dcr-menu { position: fixed; z-index: 10001; width: 224px; max-height: min(420px, calc(100vh - 16px)); overflow: auto; padding: 4px; border: .5px solid var(--dcr-border); border-radius: 16px; background: var(--dcr-surface); color: var(--dcr-text); box-shadow: 0 8px 24px #0000001f; animation: dcr-tooltip-enter 120ms ease-out both; }
+.dcr-menu > button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 6px 8px; border: 0; border-radius: 8px; color: inherit; background: none; font: 13px/20px var(--dsw-font-family); text-align: start; cursor: pointer; }
+.dcr-menu > button > span { flex: 1; }
+.dcr-menu > button:is(:hover,:focus-visible) { background: var(--dcr-hover); outline: none; }
+.dcr-menu > button:disabled { opacity: .4; cursor: default; }
+.dcr-menu hr { border: 0; border-top: .5px solid var(--dcr-border); margin: 4px; }
+.dcr-menu-label { padding: 6px 8px 4px; color: var(--dcr-tertiary); font-size: 12px; line-height: 18px; }
+
+/* Audio uses a compact attachment row. Video has a dedicated custom control strip. */
+.dcr-media { width: 100%; padding: 0; font-family: var(--dsw-font-family); margin: 12px 0; color: var(--dcr-text); }
+.dcr-audio { max-width: 512px; border: .5px solid var(--dcr-border); border-radius: 8px; background: color-mix(in srgb, var(--dcr-surface) 50%, var(--dsw-alias-markdown-code-block)); }
+.dcr-audio > header { display: flex; align-items: center; gap: 10px; padding: 6px; }
+.dcr-audio-file-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 8px; background: var(--dsw-alias-markdown-code-block); color: var(--dsw-alias-state-business-primary); }
+.dcr-media-name { min-width: 0; flex: 1; }
+.dcr-media-name > span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 500 16px/20px var(--dsw-font-family); }
+.dcr-media-name > small { display: block; color: var(--dcr-secondary); font: 14px/20px var(--dsw-font-family); }
+.dcr-audio-controls { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border-top: 1px solid var(--dcr-border); }
+.dcr-time { color: var(--dcr-secondary); font: 12px/18px var(--dsw-font-family); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dcr-timeline { appearance: none; flex: 1; min-width: 0; width: 100%; height: 24px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; touch-action: none; }
+:is(.dcr-video,.dcr-menu) .dcr-timeline::-webkit-slider-runnable-track { height: 2px; border-radius: 999px; background: linear-gradient(to right, var(--dcr-text) var(--dcr-progress), var(--dcr-border) var(--dcr-progress)); }
+:is(.dcr-video,.dcr-menu) .dcr-timeline::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -7px; border: 1px solid var(--dcr-border); border-radius: 50%; background: var(--dcr-surface); box-shadow: 0 2px 4px #0000001a; cursor: pointer; }
+:is(.dcr-video,.dcr-menu) .dcr-timeline:active::-webkit-slider-thumb { cursor: grabbing; }
+.dcr-timeline:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; border-radius: 999px; }
+.dcr-timeline:disabled { opacity: .4; cursor: default; }
+.dcr-audio .dcr-timeline { appearance: auto; height: 20px; accent-color: var(--dsw-alias-state-business-primary); }
+.dcr-video { max-width: 704px; border-radius: 6px; overflow: hidden; background: var(--dcr-surface); box-shadow: 0 4px 6px #0000001a; }
+.dcr-video video { display: block; width: 100%; margin: 0; border-radius: 0; max-height: min(calc(48vh - 40px), 472px); background: #000; object-fit: contain; cursor: pointer; }
+.dcr-video video:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -2px; }
+.dcr-video-controls { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 8px; border-top: 1px solid var(--dcr-border); }
+.dcr-video-actions { display: flex; align-items: center; gap: 6px; }
+.dcr-volume-control { display: flex; align-items: center; gap: 8px; padding: 8px; }
+.dcr-video:fullscreen { width: 100%; max-width: none; height: 100%; margin: 0; border-radius: 0; display: flex; flex-direction: column; }
+.dcr-video:fullscreen video { flex: 1; min-height: 0; max-height: none; }
+
+
+@keyframes dcr-tooltip-enter { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 560px) { .dcr-video-controls { flex-wrap: wrap; } .dcr-video-controls > .dcr-timeline { flex-basis: 100%; order: -1; } .dcr-video-actions { margin-inline-start: auto; } }
+@media (prefers-reduced-motion: reduce) { .dcr-control, .dcr-tooltip, .dcr-menu { animation: none !important; transition: none !important; } }
+
+.dcr-audio .dcr-time { font-size: 14px; line-height: 20px; }
+.dcr-audio .dcr-timeline:active { cursor: grabbing; }
+
+.dcr-menu.dcr-menu-closing { animation: dcr-menu-leave 100ms ease-in forwards; pointer-events: none; }
+@keyframes dcr-menu-leave { to { opacity: 0; } }
