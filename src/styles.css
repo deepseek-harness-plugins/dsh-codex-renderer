@@ -1,24 +1,22 @@
 /* Reply content stays in DSH's native Markdown layout. */
 .dcr-source { min-width: 0; }
 .dcr-native-hidden { display: none !important; }
-.dcr-table-owner { position: relative; padding-top: 24px; }
-.dcr-table-tools { position: absolute; top: 0; right: 0; display: flex; gap: 2px; opacity: 0; transition: opacity var(--ds-transition-duration, 150ms); }
+.dcr-table-owner { position: relative; }
+.dcr-table-owner table thead th:last-child { padding-inline-end: 68px; }
+.dcr-table-tools { position: absolute; right: 0; display: flex; gap: 2px; opacity: 0; pointer-events: none; transition: opacity var(--ds-transition-duration, 150ms); }
 .dcr-table-owner:hover .dcr-table-tools,
-.dcr-table-owner:focus-within .dcr-table-tools { opacity: 1; }
+.dcr-table-owner:focus-within .dcr-table-tools { opacity: 1; pointer-events: auto; }
 .dcr-action { width: 28px; min-width: 28px; padding: 0; flex: none; color: var(--dsw-alias-label-secondary); }
 .dcr-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 
 /* Only size the native Modal; its chrome, mask and focus handling remain native. */
 .dcr-dialog { width: min(960px, calc(100vw - 48px)); max-height: 100%; }
+.dcr-dialog.dcr-table-dialog { width: fit-content; min-width: min(420px, calc(100vw - 48px)); max-width: min(1100px, calc(100vw - 48px)); }
 .dcr-preview-actions { position: absolute; top: 22px; right: 48px; }
 .dcr-dialog-body { min-height: 0; max-height: min(70vh, 680px); overflow: auto; overscroll-behavior: contain; }
 .dcr-dialog.dcr-closing { animation: dcr-close 160ms var(--ds-ease-in-out, ease) forwards; }
-.dcr-preview-table { width: max-content; min-width: 100%; border-collapse: collapse; font: var(--dsw-font-markdown-body, 14px/24px var(--dsw-font-family)); }
-.dcr-preview-table th,
-.dcr-preview-table td { padding: 10px 24px 10px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); vertical-align: top; }
-.dcr-preview-table th { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-layer-2); font-weight: 500; text-align: start; }
-.dcr-preview-table [align=center] { text-align: center; }
-.dcr-preview-table [align=right] { text-align: right; }
+.dcr-preview-table { width: max-content; min-width: 100%; border-collapse: collapse; }
+.dcr-preview-table th { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-layer-2); }
 .dcr-preview-table button { cursor: pointer; }
 
 /* Graphs and media use the same quiet surface as DSH's code cards. */
@@ -57,5 +55,5 @@
 .dcr-setting-title { font-size: 14px; line-height: 20px; font-weight: 400; }
 .dcr-setting-description { margin-top: 4px; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; }
 @keyframes dcr-close { to { opacity: 0; } }
-@media (hover: none) { .dcr-table-tools { opacity: 1; } }
+@media (hover: none) { .dcr-table-tools { opacity: 1; pointer-events: auto; } }
 @media (prefers-reduced-motion: reduce) { .dcr-closing { animation: none !important; } .dcr-table-tools { transition: none; } }

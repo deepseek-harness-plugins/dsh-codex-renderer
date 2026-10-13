@@ -28,11 +28,11 @@ export function Copy({getValue,label='复制'}) {
   return <Action label={status==='copied'?'已复制':status==='error'?'复制失败，点击重试':label} icon={status==='copied'?'check':'copy'} onClick={copy}/>;
 }
 
-export function Modal({title,children,actions,onClose}) {
+export function Modal({title,children,actions,onClose,className=''}) {
   const timer=useRef(),[closing,setClosing]=useState(false);
   useEffect(()=>()=>clearTimeout(timer.current),[]);
   const close=()=>{if(closing)return;setClosing(true);timer.current=setTimeout(onClose,matchMedia('(prefers-reduced-motion: reduce)').matches?0:160);};
-  return <DshModal open onClose={close} title={title} closeLabel="关闭预览" className={`dcr-dialog${closing?' dcr-closing':''}`}>
+  return <DshModal open onClose={close} title={title} closeLabel="关闭预览" className={`dcr-dialog ${className}${closing?' dcr-closing':''}`}>
     <div className="dcr-preview-actions dcr-actions">{actions}</div><div className="dcr-dialog-body">{children}</div>
   </DshModal>;
 }
@@ -41,19 +41,27 @@ function TablePreview({table}) {
   const target=useRef();
   useLayoutEffect(()=>{
     const original=Array.from(table.querySelectorAll('button')),clone=table.cloneNode(true);
-    clone.classList.add('dcr-preview-table');target.current.append(clone);
+    const markdown=table.closest('div[class*="_markdown_"]').cloneNode(false),frame=table.parentElement.cloneNode(false);
+    frame.classList.remove('dcr-table-owner');
+    clone.classList.add('dcr-preview-table');frame.append(clone);markdown.append(frame);target.current.append(markdown);
     const buttons=Array.from(clone.querySelectorAll('button'));
     const forward=event=>{const button=event.target.closest('button');if(button)original[buttons.indexOf(button)]?.click();};
     clone.addEventListener('click',forward);
-    return()=>{clone.removeEventListener('click',forward);clone.remove();};
+    return()=>{clone.removeEventListener('click',forward);markdown.remove();};
   },[table]);
   return <div ref={target} className="dcr-table-preview" tabIndex="0" role="region" aria-label="表格内容"/>;
 }
 
 export function TableTools({table}) {
-  const [expanded,setExpanded]=useState(false);
-  return <><div className="dcr-table-tools"><Copy label="复制表格" getValue={()=>tableClipboard(table)}/><Action label="展开表格" icon="expand" onClick={()=>setExpanded(true)}/></div>
-    {expanded&&<Modal title="表格预览" onClose={()=>setExpanded(false)} actions={<Copy label="复制表格" getValue={()=>tableClipboard(table)}/>}><TablePreview table={table}/></Modal>}</>;
+  const [expanded,setExpanded]=useState(false),[top,setTop]=useState(0);
+  useLayoutEffect(()=>{
+    const header=table.tHead.rows[0],owner=table.parentElement;
+    const align=()=>{const row=header.getBoundingClientRect(),container=owner.getBoundingClientRect();setTop(row.top-container.top+(row.height-28)/2);};
+    align();const observer=new ResizeObserver(align);observer.observe(header);observer.observe(owner);
+    return()=>observer.disconnect();
+  },[table]);
+  return <><div className="dcr-table-tools" style={{top}}><Copy label="复制表格" getValue={()=>tableClipboard(table)}/><Action label="展开表格" icon="expand" onClick={()=>setExpanded(true)}/></div>
+    {expanded&&<Modal className="dcr-table-dialog" title="表格预览" onClose={()=>setExpanded(false)} actions={<Copy label="复制表格" getValue={()=>tableClipboard(table)}/>}><TablePreview table={table}/></Modal>}</>;
 }
 
 function saveBlob(blob,name) {
