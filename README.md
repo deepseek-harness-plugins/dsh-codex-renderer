@@ -1,13 +1,13 @@
 # DSH Codex Renderer
 
-为 DeepSeek Harness 增加表格、Mermaid 图表与音视频播放器，表格与图表沿用 DSH 原生样式，音视频按 Codex 桌面端的控件布局实现。
+为 DeepSeek Harness 增加表格、Mermaid 图表与音视频播放器，表格沿用 DSH 原生样式，Mermaid 与音视频参照 Codex 桌面端的控件布局实现。
 
 ## 功能
 
 | 组件 | 功能 |
 | --- | --- |
 | 表格 | 悬停工具栏、复制表格、展开预览、保留横向滚动 |
-| Mermaid | 图表渲染、源码切换、源码复制、SVG 下载、预览缩放 |
+| Mermaid | 圆角节点、虚线判断框、悬停菜单、PNG 导出、展开缩放与拖动 |
 | 音频 | 播放与暂停、时间轴定位、进度显示、文件下载 |
 | 视频 | 自定义播放条、定位、音量、倍速、全屏、画中画 |
 
@@ -23,9 +23,15 @@
 
 ### Mermaid 图表
 
-自动识别 `mermaid` 代码块并生成图表。支持切换源码、复制源码、下载 SVG 和放大预览。
+自动识别 `mermaid` 代码块。流程图采用 ELK 布局、60px 圆角节点、虚线判断框与细折线，支持浅色和深色外观。
+
+悬停时显示「图表选项」和「展开图表」。菜单提供源码切换、原始源码复制和两倍分辨率 PNG 下载。展开后可以拖动图表，使用底部控件缩放，按 Esc 关闭；窗口大小保持固定。
 
 ![Mermaid 图表](assets/mermaid.png)
+
+![Mermaid 悬停菜单与源码切换演示](assets/mermaid-demo.gif)
+
+同一份源码的节点、菜单、预览、窄容器与深色外观，对照见 [Mermaid 校准记录](docs/codex-mermaid-parity.md)。
 
 ### 音视频
 
@@ -50,7 +56,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.2.2.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.3.0.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
@@ -98,7 +104,7 @@ npm run demo:media
 
 ## 音视频控件对齐
 
-音频的附件行和视频操作条按 Codex 原组件的截图与尺寸实现，对比覆盖 20 个状态，包括播放、悬停、拖动、菜单、音量、全屏、窄宽度与深色模式。表格与图表保持原有布局，设置仍使用 DSH 原生组件。
+音频的附件行和视频操作条按 Codex 原组件的截图与尺寸实现，对比覆盖 20 个状态，包括播放、悬停、拖动、菜单、音量、全屏、窄宽度与深色模式。表格保持原有布局，设置仍使用 DSH 原生组件。
 
 ![音频控件对照](assets/audio-comparison.png)
 

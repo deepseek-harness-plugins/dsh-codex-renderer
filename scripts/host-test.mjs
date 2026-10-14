@@ -23,7 +23,7 @@ const mock=createServer(async(req,res)=>{
   const send=(type,data)=>res.write(`event: ${type}\ndata: ${JSON.stringify({type,...data})}\n\n`);
   send('message_start',{message:{id:'render_'+requests,type:'message',role:'assistant',content:[],model:request.model,stop_reason:null,stop_sequence:null,usage:{input_tokens:1,output_tokens:0}}});
   send('content_block_start',{index:0,content_block:{type:'text',text:''}});
-  const text=requests===1?responseText():requests===2?'```mermaid\nflowchart LR\n A[broken -->\n```\n\n错误语法样例结束。':`![网络音频](${mockURL}/sample.wav)\n\n![网络视频](${mockURL}/sample.mp4)`;
+  const text=requests===4?'```mermaid\nsequenceDiagram\n participant U as 用户\n participant P as 插件\n U->>P: 渲染请求\n P-->>U: 显示图表\n```\n\n```mermaid\nflowchart TB\n subgraph G[处理流程]\n A((开始)) --> B{是否通过}\n B -->|通过| C[完成]\n B -->|重试| A\n end\n```':requests===1?responseText():requests===2?'```mermaid\nflowchart LR\n A[broken -->\n```\n\n错误语法样例结束。':`![网络音频](${mockURL}/sample.wav)\n\n![网络视频](${mockURL}/sample.mp4)`;
   for(let i=0;i<text.length;i+=80){send('content_block_delta',{index:0,delta:{type:'text_delta',text:text.slice(i,i+80)}});await new Promise(r=>setTimeout(r,12));}
   send('content_block_stop',{index:0});send('message_delta',{delta:{stop_reason:'end_turn',stop_sequence:null},usage:{output_tokens:100}});send('message_stop',{});res.end();
 });
@@ -82,10 +82,21 @@ try{
   await page.locator('.dcr-dialog').screenshot({path:join(assets,'table-expanded.png')});
   await page.keyboard.press('Escape');await page.locator('.dcr-closing').waitFor();await page.locator('.dcr-dialog').waitFor({state:'detached'});check('表格展开及关闭动画');
   const diagram=page.locator('.dcr-mermaid');await page.setViewportSize({width:1200,height:1400});await diagram.scrollIntoViewIfNeeded();await diagram.screenshot({path:join(assets,'mermaid.png')});await page.setViewportSize({width:1200,height:900});
-  await page.getByRole('button',{name:'复制 Mermaid 源码',exact:true}).click();assert.match(await page.evaluate(()=>navigator.clipboard.readText()),/^flowchart LR/);
-  await page.getByRole('button',{name:'显示源码',exact:true}).click();assert.match(await diagram.locator('pre').innerText(),/Markdown 回复/);await page.getByRole('button',{name:'显示源码',exact:true}).click();
-  const saved=page.waitForEvent('download');await page.getByRole('button',{name:'下载 SVG',exact:true}).click();assert.equal((await saved).suggestedFilename(),'diagram.svg');
-  await page.getByRole('button',{name:'展开图表',exact:true}).click();await page.getByRole('button',{name:'放大图表',exact:true}).click();assert.equal(await page.locator('.dcr-zoom').innerText(),'125%');await page.keyboard.press('Escape');await page.locator('.dcr-dialog').waitFor({state:'detached'});check('Mermaid 渲染、源码、复制、下载和缩放');
+  const geometry=await diagram.locator('svg .node').evaluateAll(nodes=>nodes.map(node=>({text:node.textContent.trim(),shape:node.querySelector('.label-container')?.tagName,height:node.getBoundingClientRect().height,font:getComputedStyle(node.querySelector('text')).font,dash:getComputedStyle(node.querySelector('.label-container')).strokeDasharray})));
+  assert.equal(geometry.length,5);assert.ok(geometry.every(node=>Math.abs(node.height-60)<.1));assert.ok(geometry.every(node=>node.shape==='rect'));assert.match(geometry[1].dash,/2/);assert.match(geometry[0].font,/600 14px/);
+  assert.equal(await diagram.locator('header').count(),0);await page.mouse.move(0,0);await page.waitForFunction(()=>getComputedStyle(document.querySelector('.dcr-graph-tools')).opacity==='0');
+  assert.match(await diagram.getByRole('button',{name:'展开图表',exact:true}).evaluate(el=>getComputedStyle(el).cornerShape),/^(round|superellipse\(1\))$/);
+  const graphMenu=async label=>{await diagram.hover();await diagram.getByRole('button',{name:'图表选项',exact:true}).click();await page.getByRole('menuitem',{name:label,exact:true}).click();await page.getByRole('menu').waitFor({state:'detached'});};
+  await graphMenu('复制为代码');assert.match(await page.evaluate(()=>navigator.clipboard.readText()),/^flowchart LR/);
+  await graphMenu('显示源代码');assert.match(await diagram.locator('pre').innerText(),/B\{内容类型\}/);await graphMenu('显示图表');
+  const saved=page.waitForEvent('download');await graphMenu('下载图像');const exported=await saved;assert.equal(exported.suggestedFilename(),'mermaid-diagram.png');await exported.saveAs(join(artifacts,'diagram.png'));
+  const bytes=await readFile(join(artifacts,'diagram.png'));assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.ok(bytes.readUInt32BE(16)>500);assert.equal(bytes.readUInt32BE(20),552);
+  await diagram.hover();await diagram.getByRole('button',{name:'展开图表',exact:true}).click();const viewer=page.getByRole('dialog',{name:'图表预览',exact:true});const before=await viewer.boundingBox();assert.equal(before.width,1200);assert.equal(before.height,900);
+  await page.getByRole('button',{name:'放大图表',exact:true}).click();assert.equal(await page.locator('.dcr-zoom').innerText(),'125%');assert.deepEqual(await viewer.boundingBox(),before);
+  await page.getByRole('button',{name:'重置图表缩放',exact:true}).click();assert.equal(await page.locator('.dcr-zoom').innerText(),'100%');
+  const canvas=viewer.locator('.dcr-graph-canvas'),canvasBox=await canvas.boundingBox();await page.mouse.move(canvasBox.x+20,canvasBox.y+20);await page.mouse.down();await page.mouse.move(canvasBox.x+60,canvasBox.y+45);assert.equal(await canvas.evaluate(el=>getComputedStyle(el).cursor),'grabbing');await page.mouse.up();assert.match(await viewer.locator('.dcr-graph-image').getAttribute('style'),/translate\(40px, 25px\)/);
+  await page.keyboard.press('Escape');await page.locator('.dcr-graph-viewer-closing').waitFor();await viewer.waitFor({state:'detached'});assert.equal(await diagram.getByRole('button',{name:'展开图表',exact:true}).evaluate(el=>el===document.activeElement),true);
+  check('Mermaid 节点尺寸、悬停菜单、源码复制、PNG 导出、固定预览、缩放拖动与关闭焦点');
   await page.waitForFunction(()=>document.querySelector('.dcr-audio audio')?.duration>0&&document.querySelector('.dcr-video video')?.duration>0);
   assert.match(await page.locator('audio').getAttribute('src'),/^blob:/);assert.match(await page.locator('video').getAttribute('src'),/^blob:/);
   const audioBox=await page.locator('.dcr-audio').boundingBox(),videoBox=await page.locator('.dcr-video').boundingBox();
@@ -167,6 +178,9 @@ try{
   assert.equal(await remoteAudio.locator('audio').getAttribute('src'),mockURL+'/sample.wav');assert.equal(await remoteVideo.locator('video').getAttribute('src'),mockURL+'/sample.mp4');
   await remoteAudio.getByRole('button',{name:'播放音频',exact:true}).click();await page.waitForFunction(()=>Array.from(document.querySelectorAll('audio')).at(-1).currentTime>.15);await remoteAudio.getByRole('button',{name:'暂停音频',exact:true}).click();
   await remoteVideo.locator('video').evaluate(async el=>{await el.play();});await page.waitForFunction(()=>Array.from(document.querySelectorAll('video')).at(-1).currentTime>.15);await remoteVideo.locator('video').evaluate(el=>el.pause());check('HTTP 音视频保留原始地址并正常播放');
+  await send('时序图与分组图样例');await page.locator('.dcr-diagram svg').nth(2).waitFor();assert.equal(await page.locator('.dcr-mermaid').count(),4);
+  const grouped=page.locator('.dcr-diagram').last();assert.ok(await grouped.locator('.cluster').count()>0);assert.ok(await grouped.locator('.node circle').count()>0);assert.match(await grouped.innerText(),/通过/);assert.ok(await page.locator('.dcr-diagram').nth(1).locator('.messageLine0').count()>0);
+  check('多个图表串行绘制，时序图、分组、圆形节点、标签与回路保留');
   assert.deepEqual(errors,[]);check('真实 DSH 宿主无页面异常');
   await writeFile(join(artifacts,'verification.json'),JSON.stringify({checks,errors},null,2));console.log('RENDERER_HOST_OK',checks.length);
 }catch(e){if(page){await page.screenshot({path:join(artifacts,'failure.png')});console.log((await page.locator('body').innerText()).slice(-4000));console.log(await page.evaluate(()=>({style:!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]'),sources:document.querySelectorAll('.dcr-source').length,settings:localStorage.getItem('dsh-codex-renderer.ui.v1')})));}console.log(log.slice(-2200));console.log(errors);console.log(clientLogs.slice(-8));throw e;}

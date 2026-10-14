@@ -1,6 +1,6 @@
 {
   "name": "@deepseekharness-plugin/dsh-codex-renderer",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "icon": "./icon.svg",
   "description": "DeepSeek Harness 的 Codex 风格表格、Mermaid 和音视频渲染组件",
   "type": "module",
@@ -23,7 +23,9 @@
     "assets/*.png",
     "assets/sample.wav",
     "assets/sample.mp4",
-    "scripts/media-demo.mjs"
+    "scripts/media-demo.mjs",
+    "docs/codex-mermaid-parity.md",
+    "assets/*.gif"
   ],
   "engines": {
     "node": ">=22.19.0",
@@ -51,11 +53,12 @@
     "check": "npm run build && npm test && npm run test:host && npm run test:boot"
   },
   "devDependencies": {
+    "@mermaid-js/layout-elk": "1.0.1",
     "esbuild": "0.25.10",
+    "mdast-util-from-markdown": "2.1.0",
+    "mermaid": "12.1.0",
     "playwright": "1.56.0",
     "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "mermaid": "12.1.0",
-    "mdast-util-from-markdown": "2.1.0"
+    "react-dom": "19.2.0"
   }
 }

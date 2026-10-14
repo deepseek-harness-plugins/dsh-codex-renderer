@@ -19,23 +19,34 @@
 .dcr-preview-table th { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-layer-2); }
 .dcr-preview-table button { cursor: pointer; }
 
-/* Graphs use the same quiet surface as DSH's code cards. */
-.dcr-mermaid { border: 0; border-radius: var(--dsw-radius-lg, 12px); background: var(--dsw-alias-markdown-code-block); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); }
-.dcr-mermaid { margin: 8px 0; overflow: hidden; }
-.dcr-mermaid > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.dcr-mermaid > header { padding: 8px 12px 4px 18px; color: var(--dsw-alias-label-tertiary); font: 11px/18px var(--dsw-font-family); }
+/* Mermaid's content stays inline; controls appear only on interaction. */
+.dcr-mermaid { position: relative; margin: 8px 0; color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); }
 .dcr-render-work { position: absolute; left: -100000px; top: 0; visibility: hidden; pointer-events: none; }
-.dcr-diagram { display: flex; align-items: center; justify-content: center; padding: 16px 20px 20px; overflow: auto; min-height: 100px; }
-.dcr-diagram .node rect,
-.dcr-diagram .node polygon { filter: none !important; }
-.dcr-diagram .node rect { rx: 6px; ry: 6px; }
-.dcr-diagram svg { max-width: 100%; max-height: 340px; width: auto; height: auto; }
-.dcr-diagram-expanded { padding: 16px 0; }
-.dcr-diagram-expanded svg { max-height: none; }
-.dcr-mermaid pre { margin: 0; padding: 8px 20px 20px; font: var(--dsw-font-markdown-code-block); white-space: pre-wrap; }
-.dcr-zoom { min-width: 40px; text-align: center; color: var(--dsw-alias-label-secondary); font: 11px/18px var(--dsw-font-family); }
+.dcr-diagram { display: flex; align-items: center; justify-content: center; min-height: 240px; overflow: hidden; }
+.dcr-diagram > svg { display: block; max-width: 100%; max-height: 480px; width: auto; height: auto; }
+.dcr-graph-tools { position: absolute; z-index: 1; top: 0; right: 0; display: flex; gap: 4px; opacity: 0; pointer-events: none; transition: opacity 150ms ease; }
+.dcr-mermaid:hover .dcr-graph-tools, .dcr-mermaid:focus-within .dcr-graph-tools { opacity: 1; pointer-events: auto; }
+.dcr-control-graph { width: 36px; height: 36px; border-radius: 50%; color: var(--dcr-secondary); cursor: default; }
+.dcr-graph-source { margin: 0; padding: 44px 16px 16px; border-radius: var(--dsw-radius-lg,12px); background: var(--dsw-alias-markdown-code-block); font: var(--dsw-font-markdown-code-block); white-space: pre-wrap; overflow-wrap: anywhere; }
 .dcr-status { margin: 0; padding: 8px 0; color: var(--dsw-alias-label-secondary); font: 12px/18px var(--dsw-font-family); }
-.dcr-mermaid .dcr-status { padding: 12px 20px; }
+.dcr-graph-notice { position: absolute; bottom: 0; left: 0; }
+.dcr-graph-viewer { box-sizing: border-box; position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 48px 32px 96px; border: 0; background: #181818; color: #1a1c1f; overflow: hidden; animation: dcr-graph-open 160ms ease-out both; }
+.dcr-graph-viewer::backdrop { background: #181818; }
+.dcr-graph-viewer-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+.dcr-graph-viewer .dcr-control-graph { width: 40px; height: 40px; background: #ffffff59; color: #1a1c1f; }
+.dcr-graph-viewer .dcr-control-graph:hover:not(:disabled) { background: #ffffff80; }
+.dcr-graph-canvas { display: flex; align-items: center; justify-content: center; height: 100%; border-radius: 18px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.dcr-graph-dragging { cursor: grabbing; }
+.dcr-graph-image { flex: none; max-width: calc(100% - 32px); max-height: calc(100% - 32px); display: flex; align-items: center; justify-content: center; transform-origin: center; }
+.dcr-graph-image > svg { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 176px); pointer-events: none; }
+.dcr-graph-zoom { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 9999px; background: #ffffff59; }
+.dcr-graph-zoom .dcr-control-graph { width: 36px; height: 36px; background: #0000000d; }
+.dcr-zoom { width: 64px; border: 0; padding: 0; background: none; color: inherit; font: 13px/20px var(--dsw-font-family); cursor: default; }
+.dcr-graph-viewer-closing { animation: dcr-graph-close 160ms ease-in forwards; pointer-events: none; }
+@keyframes dcr-graph-open { from { opacity: 0; } }
+@keyframes dcr-graph-close { to { opacity: 0; } }
+@media (hover: none) { .dcr-graph-tools { opacity: 1; pointer-events: auto; } }
+@media (prefers-reduced-motion: reduce) { .dcr-graph-tools { transition: none; } .dcr-graph-viewer { animation: none; } }
 /* Match General Settings' native DeveloperToolsRow geometry. */
 .dcr-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); }
 .dcr-setting-title { font-size: 14px; line-height: 20px; font-weight: 400; }
@@ -45,7 +56,7 @@
 @media (prefers-reduced-motion: reduce) { .dcr-closing { animation: none !important; } .dcr-table-tools { transition: none; } }
 
 /* Widget controls have their own geometry; General Settings keeps DSH's primitives. */
-.dcr-media, .dcr-tooltip, .dcr-menu {
+.dcr-media, .dcr-tooltip, .dcr-menu, .dcr-mermaid {
   --dcr-surface: var(--dsw-alias-bg-layer-2);
   --dcr-text: var(--dsw-alias-label-primary);
   --dcr-secondary: var(--dsw-alias-label-secondary);
@@ -128,3 +139,6 @@
 
 .dcr-menu.dcr-menu-closing { animation: dcr-menu-leave 100ms ease-in forwards; pointer-events: none; }
 @keyframes dcr-menu-leave { to { opacity: 0; } }
+
+/* Graph actions stay circular, independently of media corner smoothing. */
+.dcr-control-graph { corner-shape: round; }

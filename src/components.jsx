@@ -69,37 +69,7 @@ function saveBlob(blob,name) {
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-export function MermaidCard({code}) {
-  const [svg,setSvg]=useState(''),[error,setError]=useState(''),[source,setSource]=useState(false),[expanded,setExpanded]=useState(false),[zoom,setZoom]=useState(1),[palette,setPalette]=useState(null),holder=useRef();
-  useLayoutEffect(()=>{
-    let previous='';
-    const read=()=>{const style=getComputedStyle(holder.current),token=name=>style.getPropertyValue(name).trim(),next={fontFamily:style.fontFamily,fontSize:'14px',primaryColor:token('--dsw-alias-bg-layer-2'),primaryTextColor:token('--dsw-alias-label-primary'),primaryBorderColor:token('--dsw-alias-border-l2'),lineColor:token('--dsw-alias-label-secondary'),edgeLabelBackground:token('--dsw-alias-markdown-code-block')},key=JSON.stringify(next);if(key!==previous){previous=key;setPalette(next);}};
-    read();
-    const observer=new MutationObserver(read);observer.observe(document.documentElement,{attributes:true});observer.observe(document.body,{attributes:true});
-    const scheme=matchMedia('(prefers-color-scheme: dark)');scheme.addEventListener('change',read);
-    return()=>{observer.disconnect();scheme.removeEventListener('change',read);};
-  },[]);
-  useEffect(()=>{
-    if(!palette)return;
-    let live=true;setSvg('');setError('');
-    (async()=>{
-      try {
-        const {default:mermaid}=await import('mermaid');
-        mermaid.initialize({startOnLoad:false,securityLevel:'strict',suppressErrorRendering:true,htmlLabels:false,theme:'base',fontFamily:palette.fontFamily,themeVariables:palette,flowchart:{htmlLabels:false,curve:'basis'}});
-        const result=await mermaid.render(`dcr-${crypto.randomUUID()}`,code,holder.current);
-        if(live)setSvg(result.svg);
-      } catch(e) {if(live)setError('图表无法渲染，请检查 Mermaid 语法。');}
-    })();
-    return()=>{live=false;};
-  },[code,palette]);
-  const actions=<><Copy label="复制 Mermaid 源码" getValue={()=>code}/><Action label="显示源码" icon="code" pressed={source} onClick={()=>setSource(!source)}/><Action label="下载 SVG" icon="download" disabled={!svg} onClick={()=>saveBlob(new Blob([svg],{type:'image/svg+xml'}),'diagram.svg')}/><Action label="展开图表" icon="expand" disabled={!svg} onClick={()=>{setZoom(1);setExpanded(true);}}/></>;
-  return <div className="dcr-mermaid" aria-label="Mermaid 图表">
-    <header><span>Mermaid</span><div className="dcr-actions">{actions}</div></header>
-    <div ref={holder} className="dcr-render-work" aria-hidden="true"/>
-    {source||error?<><pre><code>{code}</code></pre>{error&&<p className="dcr-status" role="status">{error}</p>}</>:svg?<div className="dcr-diagram" dangerouslySetInnerHTML={{__html:svg}}/>:<p className="dcr-status" role="status">正在绘制图表…</p>}
-    {expanded&&<Modal title="图表预览" onClose={()=>setExpanded(false)} actions={<><Action label="缩小图表" icon="minus" disabled={zoom<=.5} onClick={()=>setZoom(Math.max(.5,zoom-.25))}/><span className="dcr-zoom">{Math.round(zoom*100)}%</span><Action label="放大图表" icon="plus" disabled={zoom>=3} onClick={()=>setZoom(Math.min(3,zoom+.25))}/></>}><div className="dcr-diagram dcr-diagram-expanded" style={{zoom}} dangerouslySetInnerHTML={{__html:svg}}/></Modal>}
-  </div>;
-}
+export {MermaidCard} from './mermaid.jsx';
 
 const time=value=>`${Math.floor(value/60)}:${String(Math.floor(value%60)).padStart(2,'0')}`;
 export function MediaCard({item}) {
