@@ -1,7 +1,8 @@
 import React,{useState,useEffect,useLayoutEffect,useRef} from 'react';
-import {Button,Tooltip,Modal as DshModal,IconCopyOutlineRegular,IconFullscreenOutlineRegular,IconCloseOutlineRegular,IconCheckOutlineRegular,IconDownloadOutlineRegular,IconCodeOutlineRegular,IconPlayOutlineRegular,IconPauseOutlineRegular,IconPlusOutlineRegular,IconRightUpOutlineRegular} from '@deepseek-ai/dsh-client-ui-primitives';
+import {Button,Tooltip,IconCopyOutlineRegular,IconFullscreenOutlineRegular,IconCloseOutlineRegular,IconCheckOutlineRegular,IconDownloadOutlineRegular,IconCodeOutlineRegular,IconPlayOutlineRegular,IconPauseOutlineRegular,IconPlusOutlineRegular,IconRightUpOutlineRegular} from '@deepseek-ai/dsh-client-ui-primitives';
 import {Action as MediaAction,Icon as MediaIcon,Menu} from './controls.jsx';
 import {tableClipboard} from './core.js';
+import {PreviewModal as Modal} from './preview.jsx';
 
 export function Icon({name}) {
   const Native={copy:IconCopyOutlineRegular,expand:IconFullscreenOutlineRegular,close:IconCloseOutlineRegular,check:IconCheckOutlineRegular,download:IconDownloadOutlineRegular,code:IconCodeOutlineRegular,play:IconPlayOutlineRegular,pause:IconPauseOutlineRegular,plus:IconPlusOutlineRegular,external:IconRightUpOutlineRegular}[name];
@@ -27,15 +28,6 @@ export function Copy({getValue,label='复制'}) {
     clearTimeout(timer.current);timer.current=setTimeout(()=>setStatus('idle'),1600);
   };
   return <Action label={status==='copied'?'已复制':status==='error'?'复制失败，点击重试':label} icon={status==='copied'?'check':'copy'} onClick={copy}/>;
-}
-
-export function Modal({title,children,actions,onClose,className=''}) {
-  const timer=useRef(),[closing,setClosing]=useState(false);
-  useEffect(()=>()=>clearTimeout(timer.current),[]);
-  const close=()=>{if(closing)return;setClosing(true);timer.current=setTimeout(onClose,matchMedia('(prefers-reduced-motion: reduce)').matches?0:160);};
-  return <DshModal open onClose={close} title={title} closeLabel="关闭预览" className={`dcr-dialog ${className}${closing?' dcr-closing':''}`}>
-    <div className="dcr-preview-actions dcr-actions">{actions}</div><div className="dcr-dialog-body">{children}</div>
-  </DshModal>;
 }
 
 function TablePreview({table}) {

@@ -1,6 +1,7 @@
 import React,{useState,useEffect,useLayoutEffect,useRef} from 'react';
-import {createPortal} from 'react-dom';
-import {Action,Menu} from './controls.jsx';
+import {Button,Tooltip} from '@deepseek-ai/dsh-client-ui-primitives';
+import {PreviewModal} from './preview.jsx';
+import {Action,Menu,Icon} from './controls.jsx';
 import {renderDiagram} from './mermaid-render.js';
 
 function save(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -14,25 +15,26 @@ async function downloadImage(svg,dark){
   }finally{URL.revokeObjectURL(url);}
 }
 
+function ViewerButton({label,icon,onClick,disabled}){
+  return <Tooltip label={label} side="top" delayMs={350} portal disabled={disabled}><Button variant="ghost" size="sm" className="dcr-action" aria-label={label} disabled={disabled} onClick={onClick}><Icon name={icon} size={16}/></Button></Tooltip>;
+}
+
 function Viewer({svg,onClose,onDownload}){
-  const dialog=useRef(),viewport=useRef(),drag=useRef(),timer=useRef(),[closing,setClosing]=useState(false),[zoom,setZoom]=useState(1),[offset,setOffset]=useState({x:0,y:0}),[dragging,setDragging]=useState(false);
-  const close=()=>{if(closing)return;setClosing(true);timer.current=setTimeout(onClose,matchMedia('(prefers-reduced-motion: reduce)').matches?0:160);};
-  useLayoutEffect(()=>{
-    const previous=document.activeElement;dialog.current.showModal();dialog.current.querySelector('[aria-label="关闭图表预览"]').focus();
-    return()=>{clearTimeout(timer.current);dialog.current?.close();previous?.focus({preventScroll:true});};
-  },[]);
+  const drag=useRef(),[zoom,setZoom]=useState(1),[offset,setOffset]=useState({x:0,y:0}),[dragging,setDragging]=useState(false);
   const adjust=value=>setZoom(current=>Math.min(4,Math.max(.25,current+value)));
-  return createPortal(<dialog ref={dialog} data-dcr-ui="" aria-label="图表预览" className={`dcr-graph-viewer${closing?' dcr-graph-viewer-closing':''}`} onCancel={event=>{event.preventDefault();close();}} onKeyDown={event=>{
-    if(['+','=','-','0'].includes(event.key)&&!event.ctrlKey&&!event.metaKey){event.preventDefault();if(event.key==='0'){setZoom(1);setOffset({x:0,y:0});}else adjust(event.key==='-'?-.25:.25);}
-  }}>
-    <div className="dcr-graph-viewer-actions"><Action variant="graph" label="下载图像" icon="download" onClick={onDownload}/><Action variant="graph" label="关闭图表预览" icon="close" onClick={close}/></div>
-    <div ref={viewport} className={`dcr-graph-canvas${dragging?' dcr-graph-dragging':''}`} onPointerDown={event=>{
+  const reset=()=>{setZoom(1);setOffset({x:0,y:0});};
+  return <PreviewModal title="图表预览" className="dcr-graph-dialog" onClose={onClose}
+    actions={<ViewerButton label="下载图像" icon="download" onClick={onDownload}/>}
+    footer={<div className="dcr-graph-zoom"><ViewerButton label="缩小图表" icon="minus" disabled={zoom<=.25} onClick={()=>adjust(-.25)}/><Button variant="ghost" size="sm" className="dcr-zoom" aria-label="重置图表缩放" onClick={reset}>{Math.round(zoom*100)}%</Button><ViewerButton label="放大图表" icon="plus" disabled={zoom>=4} onClick={()=>adjust(.25)}/></div>}
+    onKeyDownCapture={event=>{
+      if(['+','=','-','0'].includes(event.key)&&!event.ctrlKey&&!event.metaKey){event.preventDefault();if(event.key==='0')reset();else adjust(event.key==='-'?-.25:.25);}
+    }}>
+    <div className={`dcr-graph-canvas${dragging?' dcr-graph-dragging':''}`} onPointerDown={event=>{
       if(event.button!==0)return;drag.current={x:event.clientX,y:event.clientY,offset};event.currentTarget.setPointerCapture(event.pointerId);setDragging(true);
     }} onPointerMove={event=>{if(drag.current)setOffset({x:drag.current.offset.x+event.clientX-drag.current.x,y:drag.current.offset.y+event.clientY-drag.current.y});}} onPointerUp={()=>{drag.current=null;setDragging(false);}} onPointerCancel={()=>{drag.current=null;setDragging(false);}} onLostPointerCapture={()=>{drag.current=null;setDragging(false);}}>
       <div className="dcr-graph-image" style={{transform:`translate(${offset.x}px,${offset.y}px) scale(${zoom})`}} dangerouslySetInnerHTML={{__html:svg}}/>
     </div>
-    <div className="dcr-graph-zoom"><Action variant="graph" label="缩小图表" icon="minus" disabled={zoom<=.25} onClick={()=>adjust(-.25)}/><button className="dcr-zoom" type="button" aria-label="重置图表缩放" onClick={()=>{setZoom(1);setOffset({x:0,y:0});}}>{Math.round(zoom*100)}%</button><Action variant="graph" label="放大图表" icon="plus" disabled={zoom>=4} onClick={()=>adjust(.25)}/></div>
-  </dialog>,document.body);
+  </PreviewModal>;
 }
 
 export function MermaidCard({code}){

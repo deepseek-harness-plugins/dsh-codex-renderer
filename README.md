@@ -25,11 +25,11 @@
 
 自动识别 `mermaid` 代码块。流程图采用 ELK 布局、60px 圆角节点、虚线判断框与细折线，支持浅色和深色外观。
 
-悬停时显示「图表选项」和「展开图表」。菜单提供源码切换、原始源码复制和两倍分辨率 PNG 下载。展开后可以拖动图表，使用底部控件缩放，按 Esc 关闭；窗口大小保持固定。
+悬停时显示「图表选项」和「展开图表」。菜单提供源码切换、原始源码复制和两倍分辨率 PNG 下载。展开预览使用 DSH 原生弹窗的遮罩、标题栏和关闭按钮。弹窗内可以拖动图表、使用底部控件缩放，按 Esc 或点击遮罩关闭；缩放时窗口大小保持固定。
 
 ![Mermaid 图表](assets/mermaid.png)
 
-![Mermaid 悬停菜单与源码切换演示](assets/mermaid-demo.gif)
+![Mermaid 菜单与原生预览弹窗演示](assets/mermaid-demo.gif)
 
 同一份源码的节点、菜单、预览、窄容器与深色外观，对照见 [Mermaid 校准记录](docs/codex-mermaid-parity.md)。
 
@@ -56,7 +56,7 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.3.0.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.3.1.tgz"
 ```
 
 然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。

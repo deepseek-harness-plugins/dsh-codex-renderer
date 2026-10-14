@@ -10,11 +10,10 @@
 .dcr-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 
 /* Only size the native Modal; its chrome, mask and focus handling remain native. */
-.dcr-dialog { width: min(960px, calc(100vw - 48px)); max-height: 100%; }
+.dcr-dialog { width: min(960px, 100%); max-height: 100%; }
 .dcr-dialog.dcr-table-dialog { width: fit-content; min-width: min(420px, calc(100vw - 48px)); max-width: min(1100px, calc(100vw - 48px)); }
 .dcr-preview-actions { position: absolute; top: 22px; right: 48px; }
 .dcr-dialog-body { min-height: 0; max-height: min(70vh, 680px); overflow: auto; overscroll-behavior: contain; }
-.dcr-dialog.dcr-closing { animation: dcr-close 160ms var(--ds-ease-in-out, ease) forwards; }
 .dcr-preview-table { width: max-content; min-width: 100%; border-collapse: collapse; }
 .dcr-preview-table th { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-layer-2); }
 .dcr-preview-table button { cursor: pointer; }
@@ -30,30 +29,20 @@
 .dcr-graph-source { margin: 0; padding: 44px 16px 16px; border-radius: var(--dsw-radius-lg,12px); background: var(--dsw-alias-markdown-code-block); font: var(--dsw-font-markdown-code-block); white-space: pre-wrap; overflow-wrap: anywhere; }
 .dcr-status { margin: 0; padding: 8px 0; color: var(--dsw-alias-label-secondary); font: 12px/18px var(--dsw-font-family); }
 .dcr-graph-notice { position: absolute; bottom: 0; left: 0; }
-.dcr-graph-viewer { box-sizing: border-box; position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 48px 32px 96px; border: 0; background: #181818; color: #1a1c1f; overflow: hidden; animation: dcr-graph-open 160ms ease-out both; }
-.dcr-graph-viewer::backdrop { background: #181818; }
-.dcr-graph-viewer-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
-.dcr-graph-viewer .dcr-control-graph { width: 40px; height: 40px; background: #ffffff59; color: #1a1c1f; }
-.dcr-graph-viewer .dcr-control-graph:hover:not(:disabled) { background: #ffffff80; }
-.dcr-graph-canvas { display: flex; align-items: center; justify-content: center; height: 100%; border-radius: 18px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.dcr-graph-canvas { display: flex; align-items: center; justify-content: center; height: min(480px, 55vh); overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
 .dcr-graph-dragging { cursor: grabbing; }
-.dcr-graph-image { flex: none; max-width: calc(100% - 32px); max-height: calc(100% - 32px); display: flex; align-items: center; justify-content: center; transform-origin: center; }
-.dcr-graph-image > svg { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 176px); pointer-events: none; }
-.dcr-graph-zoom { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 9999px; background: #ffffff59; }
-.dcr-graph-zoom .dcr-control-graph { width: 36px; height: 36px; background: #0000000d; }
-.dcr-zoom { width: 64px; border: 0; padding: 0; background: none; color: inherit; font: 13px/20px var(--dsw-font-family); cursor: default; }
-.dcr-graph-viewer-closing { animation: dcr-graph-close 160ms ease-in forwards; pointer-events: none; }
-@keyframes dcr-graph-open { from { opacity: 0; } }
-@keyframes dcr-graph-close { to { opacity: 0; } }
+.dcr-graph-image { flex: none; max-width: calc(100% - 32px); max-height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center; }
+.dcr-graph-image > svg { display: block; width: auto; height: auto; max-width: 100%; max-height: min(480px, 55vh); pointer-events: none; }
+.dcr-graph-zoom { display: flex; align-items: center; gap: 4px; }
+.dcr-zoom { min-width: 64px; }
 @media (hover: none) { .dcr-graph-tools { opacity: 1; pointer-events: auto; } }
-@media (prefers-reduced-motion: reduce) { .dcr-graph-tools { transition: none; } .dcr-graph-viewer { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .dcr-graph-tools { transition: none; } }
 /* Match General Settings' native DeveloperToolsRow geometry. */
 .dcr-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); }
 .dcr-setting-title { font-size: 14px; line-height: 20px; font-weight: 400; }
 .dcr-setting-description { margin-top: 4px; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; }
-@keyframes dcr-close { to { opacity: 0; } }
 @media (hover: none) { .dcr-table-tools { opacity: 1; pointer-events: auto; } }
-@media (prefers-reduced-motion: reduce) { .dcr-closing { animation: none !important; } .dcr-table-tools { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .dcr-table-tools { transition: none; } }
 
 /* Widget controls have their own geometry; General Settings keeps DSH's primitives. */
 .dcr-media, .dcr-tooltip, .dcr-menu, .dcr-mermaid {
