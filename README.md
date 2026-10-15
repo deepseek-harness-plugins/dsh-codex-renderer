@@ -29,7 +29,7 @@
 
 ![Mermaid 图表](assets/mermaid.png)
 
-![Mermaid 菜单与原生预览弹窗演示](assets/mermaid-demo.gif)
+![Mermaid 菜单与原生预览弹窗演示](assets/mermaid-demo-v2.gif)
 
 同一份源码的节点、菜单、预览、窄容器与深色外观，对照见 [Mermaid 校准记录](docs/codex-mermaid-parity.md)。
 
