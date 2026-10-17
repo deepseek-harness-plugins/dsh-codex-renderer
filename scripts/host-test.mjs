@@ -1,4 +1,4 @@
-import {spawn} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 import {mkdtemp,mkdir,writeFile,readFile,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
@@ -58,7 +58,7 @@ try{
   };
   await toggle('dsh-codex-renderer');
   await page.getByText('新会话',{exact:true}).first().click();
-  await page.getByRole('button',{name:/^选择模型/}).click();await page.getByText('模型',{exact:true}).click();await page.getByRole('menuitemradio',{name:'渲染测试',exact:true}).click();
+  await page.getByRole('button',{name:/^(?:请)?选择模型/}).click();if(await page.getByRole('menuitem',{name:/模型/}).count())await page.getByRole('menuitem',{name:/模型/}).click();await page.getByRole('menuitemradio',{name:'渲染测试',exact:true}).click();
   const send=async text=>{await page.locator('[contenteditable=true]').fill(text);await page.getByRole('button',{name:'发送消息',exact:true}).click();};
   await send('展示三个增强组件');
   await page.locator('.dcr-diagram svg').waitFor();await page.locator('.dcr-audio').waitFor();await page.locator('.dcr-video').waitFor();
@@ -130,7 +130,7 @@ try{
   await page.getByRole('slider',{name:'视频音量大小',exact:true}).fill('0.3');assert.equal(await page.locator('video').evaluate(el=>el.volume),.3);await page.getByRole('button',{name:'静音视频',exact:true}).click();assert.equal(await page.locator('video').evaluate(el=>el.muted),true);await page.keyboard.press('Escape');await page.locator('.dcr-menu-closing').waitFor();await page.locator('.dcr-menu').waitFor({state:'detached'});check('音视频选项菜单淡出关闭并归还焦点');
   await page.getByRole('button',{name:'全屏播放',exact:true}).click();await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('dcr-video'));
   await page.getByRole('button',{name:'视频选项',exact:true}).click();assert.equal(await page.locator('.dcr-video .dcr-menu').count(),1,'全屏时选项在全屏元素内显示');await page.keyboard.press('Escape');await page.locator('.dcr-menu').waitFor({state:'detached'});await page.getByRole('button',{name:'退出全屏',exact:true}).click();await page.waitForFunction(()=>!document.fullscreenElement);check('自定义视频倍速、音量、静音与全屏菜单');
-  const settings=async()=>{await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('button',{name:'通用设置',exact:true}).click();};
+  const settings=async()=>{await page.getByRole('button',{name:'账号菜单',exact:true}).click();await page.getByText('设置',{exact:true}).click();await page.getByRole('button',{name:'通用设置',exact:true}).click();};
   await settings();
   const nativeSwitch=page.getByRole('switch',{name:'显示代码工作视图',exact:true}),rendererSwitch=page.getByRole('switch',{name:'表格控件',exact:true});
   assert.equal(await rendererSwitch.getAttribute('class'),await nativeSwitch.getAttribute('class'),'使用与 DSH 设置相同的原生 Switch');
@@ -187,6 +187,6 @@ try{
   const grouped=page.locator('.dcr-diagram').last();assert.ok(await grouped.locator('.cluster').count()>0);assert.ok(await grouped.locator('.node circle').count()>0);assert.match(await grouped.innerText(),/通过/);assert.ok(await page.locator('.dcr-diagram').nth(1).locator('.messageLine0').count()>0);
   check('多个图表串行绘制，时序图、分组、圆形节点、标签与回路保留');
   assert.deepEqual(errors,[]);check('真实 DSH 宿主无页面异常');
-  await writeFile(join(artifacts,'verification.json'),JSON.stringify({checks,errors},null,2));console.log('RENDERER_HOST_OK',checks.length);
+  await writeFile(join(artifacts,'verification.json'),JSON.stringify({host:spawnSync('/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh',['--version'],{encoding:'utf8'}).stdout.trim(),checks,errors},null,2));console.log('RENDERER_HOST_OK',checks.length);
 }catch(e){if(page){await page.screenshot({path:join(artifacts,'failure.png')});console.log((await page.locator('body').innerText()).slice(-4000));console.log(await page.evaluate(()=>({style:!!document.querySelector('style[data-plugin="@deepseekharness-plugin/dsh-codex-renderer"]'),sources:document.querySelectorAll('.dcr-source').length,settings:localStorage.getItem('dsh-codex-renderer.ui.v1')})));}console.log(log.slice(-2200));console.log(errors);console.log(clientLogs.slice(-8));throw e;}
 finally{await browser?.close();child.kill();mock.close();}

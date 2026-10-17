@@ -56,10 +56,10 @@ npm pack
 安装到桌面端：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.3.1.tgz"
+dsh plugin --profile desktop add "$PWD/deepseekharness-plugin-dsh-codex-renderer-0.3.2.tgz"
 ```
 
-然后在 DSH 的「插件」页面确认「回复渲染增强」已启用。
+也可以在 DSH 的 **插件 → 添加插件** 中输入安装包绝对路径，安装后确认「回复渲染增强」已启用。升级时先在插件详情中卸载旧版，再安装新版；三个渲染开关的偏好会保留。
 
 ## 设置
 
@@ -109,6 +109,8 @@ npm run demo:media
 ![音频控件对照](assets/audio-comparison.png)
 
 参考截图由本机 Codex 生产组件离线渲染，DSH 截图来自真实 Web 宿主。尺寸、截图来源和仍存在的差异见 [逐状态对照记录](docs/codex-media-parity.md)。
+
+已在 **DSH 0.2.1-rc.2** 验证，展开思考正文与组合启停的修复见 [兼容性说明](docs/COMPATIBILITY.md)。
 
 ## 开发与验证
 

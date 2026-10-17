@@ -4,6 +4,7 @@ import {Switch} from '@deepseek-ai/dsh-client-ui-primitives';
 import {contentWidgets,mediaURL,createPreferences,PREFERENCE_KEY} from './core.js';
 import {TableTools,MermaidCard,MediaCard} from './components.jsx';
 import css from './styles.css';
+import {decorateSlot} from './slot-decoration.js';
 
 export const inject = ['slots'];
 
@@ -93,20 +94,11 @@ export function apply(ctx) {
   const decorate=()=>{
     const entries=ctx.slots.entries(name);
     for(const [entry,release]of registrations)if(!entries.includes(entry)){registrations.delete(entry);release();}
-    // Enhance the native reply once. Wrapping another decorator would put it
-    // both inside and outside this component when it observes our registration.
     if(registrations.size)return;
-    const replies=entries.filter(entry=>entry.options.key==='assistant-step');
-    // DSH registers its base assistant view at the default (zero) priority.
-    const entry=replies.find(entry=>(entry.options.priority??0)===0);
+    const entry=entries.find(entry=>entry.options.key==='assistant-step'&&(entry.options.priority??0)===0);
     if(entry){
-      const Original=entry.component;
-      function Renderer(props){return props.groupPart==='reasoning'?<Original {...props}/>:<EnhancedReply inner={Original} preferences={preferences} {...props}/>;}
       registrations.set(entry,()=>{});
-      // Keyed priorities must be unique. Leave the next lower seat free for
-      // annotations, which decorates each source at source.priority - 1.
-      const priority=Math.min(...replies.map(reply=>reply.options.priority??0))-2;
-      const release=ctx.slots.register({name,...entry.options,priority,inject:entry.inject,locale:entry.locale,store:entry.store},Renderer);
+      const release=decorateSlot(ctx,name,entry,(Original,props,active)=>!active||props.groupPart==='reasoning'?<Original {...props}/>:<EnhancedReply inner={Original} preferences={preferences} {...props}/>);
       registrations.set(entry,release);
     }
   };
